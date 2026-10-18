@@ -34,7 +34,10 @@ export function useBackClose(open: boolean, onClose: () => void): void {
       // Closed with a button (not Back): drop the entry we added so the next Back isn't a no-op
       pendingBackTimer = setTimeout(() => {
         pendingBackTimer = null;
-        if (window.history.state && window.history.state[LAYER_FLAG]) window.history.back();
+        const s = window.history.state;
+        // If a modal opened in the same tick (sheet "Edit" -> form modal), the top entry now belongs to it:
+        // popping would fire Back and close that modal instantly, so leave the stale entry alone.
+        if (s && s[LAYER_FLAG] && !s.overlayGuard) window.history.back();
       }, 0);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

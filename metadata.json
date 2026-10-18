@@ -1,0 +1,6 @@
+{
+  "name": "MessFlow - Mess & Hostel Management System",
+  "description": "Complete Mess & Canteen Management System with Candidates, Attendance, Meals, Inventory, Staff, Billing, Parties, Menus, and Financial Analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

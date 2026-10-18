@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+/* Enables class-based dark mode (Tailwind v4 has no tailwind.config.js darkMode
+   option — this is the CSS-first equivalent of darkMode: 'class'). Any `dark:`
+   utility now activates when an ancestor carries the `.dark` class, which the
+   ThemeProvider (src/theme.tsx) toggles on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@import "./dark-overrides.css";
+
+/* Larger type scale for every page except Stock (which is already sized this way
+   in its own markup). Tailwind v4 text utilities read these CSS variables, so
+   redefining them on a wrapper rescales every text-xs / text-sm / ... inside it.
+   Applied from App.tsx. */
+.type-scale-lg {
+  --text-xs: 0.9375rem;   /* 15px, was 12px */
+  --text-sm: 1.0625rem;   /* 17px, was 14px */
+  --text-base: 1.125rem;  /* 18px, was 16px */
+  --text-lg: 1.25rem;     /* 20px, was 18px */
+  --text-xl: 1.375rem;    /* 22px, was 20px */
+  --text-2xl: 1.75rem;    /* 28px, was 24px */
+  --text-3xl: 2rem;       /* 32px, was 30px */
+}
+/* Hard-coded tiny sizes used for badges and captions */
+.type-scale-lg [class~="text-[10px]"] { font-size: 0.75rem; }    /* 12px */
+.type-scale-lg [class~="text-[11px]"] { font-size: 0.8125rem; }  /* 13px */

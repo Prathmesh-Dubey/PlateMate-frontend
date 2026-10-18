@@ -17,8 +17,12 @@ import {
   Building2,
   X,
   SettingsIcon,
+  Download,
 } from 'lucide-react';
 import { Avatar } from './Avatar';
+
+// TODO: paste your app download link here (e.g. APK / Play Store / Drive URL)
+const APP_DOWNLOAD_URL = '';
 
 export type PageId =
   | 'billing'
@@ -174,6 +178,20 @@ export const Navigation: React.FC<NavigationProps> = ({
 
           {financeItems.map(renderItem)}
         </nav>
+
+        {/* Download app link, pinned just above the account section */}
+        <div className="px-3 pb-2">
+          <a
+            href={APP_DOWNLOAD_URL || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => onClose?.()}
+            className="flex items-center gap-3 px-3 py-2 rounded-md font-medium text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+          >
+            <Download className="w-4 h-4 shrink-0 text-slate-400" />
+            <span>Download App</span>
+          </a>
+        </div>
 
         {/* Account section: the only entry point to the profile page */}
         <div className="p-3 border-t border-slate-200">

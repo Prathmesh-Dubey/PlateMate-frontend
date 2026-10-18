@@ -39,7 +39,7 @@ import type {
 } from './types';
 
 /** Backend (Spring Boot) origin. Override with VITE_API_URL when the API runs elsewhere. */
-export const API_BASE_URL: string = ((import.meta as any).env?.VITE_API_URL as string | undefined) || 'http://localhost:8080';
+export const API_BASE_URL: string = ((import.meta as any).env?.VITE_API_URL as string | undefined) || 'https://platemate-backend-69fq.onrender.com';
 const BASE_URL = API_BASE_URL;
 
 /** Dispatched on window when the session cannot be refreshed; App listens and logs the user out. */

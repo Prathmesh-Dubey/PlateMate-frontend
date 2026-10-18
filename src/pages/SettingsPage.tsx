@@ -17,9 +17,9 @@ export function SettingsPage({ showToast }: SettingsPageProps) {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-4 sm:space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
           <SettingsIcon className="w-6 h-6 text-slate-400" />
           Settings
         </h1>
@@ -34,8 +34,8 @@ export function SettingsPage({ showToast }: SettingsPageProps) {
           Choose how MessMap looks. Your preference is saved on this device.
         </p>
 
-        <div className="flex items-center justify-between gap-4 p-4 rounded-lg border border-slate-200 bg-slate-50">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border border-slate-200 bg-slate-50">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-full bg-white border border-slate-200 flex items-center justify-center shrink-0">
               {isDark ? (
                 <Moon className="w-4 h-4 text-blue-600" />
@@ -43,9 +43,9 @@ export function SettingsPage({ showToast }: SettingsPageProps) {
                 <Sun className="w-4 h-4 text-amber-500" />
               )}
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="text-sm font-semibold text-slate-800">Dark Mode</div>
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-slate-500 break-words">
                 {isDark ? 'Currently on — dark theme across the app' : 'Currently off — using the light theme'}
               </div>
             </div>
@@ -57,7 +57,7 @@ export function SettingsPage({ showToast }: SettingsPageProps) {
             aria-checked={isDark}
             aria-label="Toggle dark mode"
             onClick={handleToggle}
-            className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+            className={`relative inline-flex h-7 w-12 shrink-0 my-1 before:absolute before:-inset-2 before:content-[''] items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
               isDark ? 'bg-blue-600' : 'bg-slate-300'
             }`}
           >

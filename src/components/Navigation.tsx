@@ -16,13 +16,11 @@ import {
   Shield,
   Building2,
   X,
+  RefreshCw,
   SettingsIcon,
-  Download,
 } from 'lucide-react';
 import { Avatar } from './Avatar';
-
-// TODO: paste your app download link here (e.g. APK / Play Store / Drive URL)
-const APP_DOWNLOAD_URL = '';
+import { ShareAppButton } from './DownloadAppLink';
 
 export type PageId =
   | 'billing'
@@ -46,6 +44,9 @@ interface NavigationProps {
   /** Mobile / tablet drawer state (the sidebar is always visible from the lg breakpoint) */
   isOpen?: boolean;
   onClose?: () => void;
+  /** Clears the saved data and reloads the current page from the server */
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 const navItems: Array<{ id: PageId; label: string; icon: React.ElementType; section: 'top' | 'ops' | 'finance' }> = [
@@ -68,6 +69,8 @@ export const Navigation: React.FC<NavigationProps> = ({
   onLogout,
   isOpen = false,
   onClose,
+  onRefresh,
+  isRefreshing = false,
 }) => {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
@@ -161,14 +164,28 @@ export const Navigation: React.FC<NavigationProps> = ({
               <span className="text-xs text-slate-500">Mess Management System</span>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 lg:hidden"
-            aria-label="Close menu"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-0.5">
+            {onRefresh && (
+              <button
+                type="button"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                className="p-2 rounded-md text-slate-400 hover:bg-slate-100 hover:text-blue-600 disabled:opacity-60"
+                aria-label="Refresh data"
+                title="Refresh data"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 lg:hidden"
+              aria-label="Close menu"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Nav links */}
@@ -179,18 +196,9 @@ export const Navigation: React.FC<NavigationProps> = ({
           {financeItems.map(renderItem)}
         </nav>
 
-        {/* Download app link, pinned just above the account section */}
+        {/* Share app (sends the direct download link), pinned just above the account section */}
         <div className="px-3 pb-2">
-          <a
-            href={APP_DOWNLOAD_URL || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => onClose?.()}
-            className="flex items-center gap-3 px-3 py-2 rounded-md font-medium text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-          >
-            <Download className="w-4 h-4 shrink-0 text-slate-400" />
-            <span>Download App</span>
-          </a>
+          <ShareAppButton />
         </div>
 
         {/* Account section: the only entry point to the profile page */}

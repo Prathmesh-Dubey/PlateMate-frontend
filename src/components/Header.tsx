@@ -1,6 +1,6 @@
 // src/components/Header.tsx
-import React from 'react';
-import { Calendar, ShieldCheck, Search, Menu } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, ShieldCheck, Search, Menu, X, ArrowLeft } from 'lucide-react';
 import type { PageId } from './Navigation';
 
 interface HeaderProps {
@@ -12,6 +12,9 @@ interface HeaderProps {
   onLogout?: () => void;
   /** Opens the navigation drawer on small screens */
   onToggleSidebar?: () => void;
+  /** Phones: shows a back arrow instead of the menu button when there is a previous screen */
+  canGoBack?: boolean;
+  onBack?: () => void;
 }
 
 const pageTitles: Record<PageId, { title: string; subtitle: string }> = {
@@ -28,38 +31,67 @@ const pageTitles: Record<PageId, { title: string; subtitle: string }> = {
   settings: { title: 'Settings', subtitle: 'Manage how MessMap looks and behaves on this device' },
 };
 
-export const Header: React.FC<HeaderProps> = ({ activePage, searchTerm, onSearchChange, todayDateStr, onToggleSidebar }) => {
+export const Header: React.FC<HeaderProps> = ({ activePage, searchTerm, onSearchChange, todayDateStr, onToggleSidebar, canGoBack, onBack }) => {
   const current = pageTitles[activePage] || { title: 'Mess Management', subtitle: 'Hostel System' };
+  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
-    <header className="bg-white border-b border-slate-200 px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 shrink-0 print:hidden">
-      <div className="flex items-start gap-3 min-w-0">
+    <header
+      className="bg-white border-b border-slate-200 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4 shrink-0 print:hidden"
+      style={{ paddingTop: 'max(0.625rem, env(safe-area-inset-top))' }}
+    >
+      <div className="flex items-center md:items-start gap-2 sm:gap-3 min-w-0">
+        {canGoBack && onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="-ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 active:bg-slate-200 sm:hidden"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        )}
         {onToggleSidebar && (
           <button
             type="button"
             onClick={onToggleSidebar}
-            className="p-2 -ml-1 rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800 lg:hidden shrink-0"
+            className={`-ml-1 h-10 w-10 shrink-0 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-800 lg:hidden ${
+              canGoBack && onBack ? 'hidden sm:flex' : 'flex'
+            }`}
             aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />
           </button>
         )}
-        <div className="min-w-0">
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight truncate">{current.title}</h1>
-          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{current.subtitle}</p>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-base sm:text-xl font-bold text-slate-900 tracking-tight truncate">{current.title}</h1>
+          <p className="hidden sm:block text-xs text-slate-500 mt-0.5 line-clamp-2">{current.subtitle}</p>
         </div>
+        {/* Phones: search collapses into an icon */}
+        <button
+          type="button"
+          onClick={() => {
+            if (searchOpen) onSearchChange('');
+            setSearchOpen(open => !open);
+          }}
+          className="p-2 rounded-md text-slate-500 hover:bg-slate-100 shrink-0 md:hidden"
+          aria-label={searchOpen ? 'Close search' : 'Search records'}
+        >
+          {searchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
+        </button>
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className={`${searchOpen ? 'flex' : 'hidden'} md:flex items-center gap-3 flex-wrap`}>
         {/* Global Search */}
-        <div className="relative flex-1 min-w-[180px] sm:flex-none sm:w-64">
+        <div className="relative flex-1 min-w-0 md:flex-none md:w-64">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Search records..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-800 placeholder-slate-400"
+            autoFocus={searchOpen}
+            className="w-full pl-9 pr-3 py-2 md:py-1.5 text-base md:text-xs bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-800 placeholder-slate-400"
           />
         </div>
 

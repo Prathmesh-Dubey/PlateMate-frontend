@@ -14,7 +14,12 @@ import {
   Receipt,
   RefreshCw,
   UserCog,
+  TrendingUp,
+  TrendingDown,
+  ChevronRight,
+  Wallet,
 } from 'lucide-react';
+import { Fact, DetailSheet } from '../components/DetailSheet';
 import api from '../api';
 import type { BillingScope, BillingSummary, MonthlyProfitLoss } from '../types';
 import { SummaryCard } from '../components/SummaryCard';
@@ -44,6 +49,7 @@ const plural = (n: number, word: string, pluralWord?: string) =>
 
 export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
   const [scope, setScope] = useState<BillingScope>('MONTH');
+  const [detailMonth, setDetailMonth] = useState<number | null>(null);
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
   const [year, setYear] = useState<number>(THIS_YEAR);
 
@@ -135,10 +141,10 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
   return (
     <div className="space-y-6">
       {/* Filter bar */}
-      <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4 print:hidden">
+      <div className="bg-white p-3 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-4 print:hidden">
         <div className="min-w-0">
-          <h2 className="text-lg font-bold text-slate-900">Financial Billing Dashboard</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900">Financial Billing Dashboard</h2>
+          <p className="text-xs text-slate-500 mt-0.5 line-clamp-1 sm:line-clamp-none">
             Showing <span className="font-semibold text-slate-700">{periodLabel}</span>
             {s?.generatedAt && <> · calculated {formatDateTime(s.generatedAt)}</>}
             {' '}· all figures come directly from the database
@@ -146,7 +152,7 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-semibold" role="tablist" aria-label="Period">
+          <div className="flex w-full sm:w-auto sm:inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-semibold" role="tablist" aria-label="Period">
             {SCOPE_OPTIONS.map(opt => (
               <button
                 key={opt.id}
@@ -154,7 +160,7 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
                 role="tab"
                 aria-selected={scope === opt.id}
                 onClick={() => setScope(opt.id)}
-                className={`px-3 py-1.5 rounded-md transition-colors ${scope === opt.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md transition-colors ${scope === opt.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
                   }`}
               >
                 {opt.label}
@@ -168,7 +174,7 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
               <select
                 value={month}
                 onChange={e => setMonth(Number(e.target.value))}
-                className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="px-3 py-2 sm:py-1.5 h-10 sm:h-auto sm:min-h-0 border border-slate-200 rounded-lg text-xs font-medium bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
                 {MONTH_OPTIONS.map(m => (
                   <option key={m} value={m}>
@@ -185,7 +191,7 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
               <select
                 value={year}
                 onChange={e => setYear(Number(e.target.value))}
-                className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="px-3 py-2 sm:py-1.5 h-10 sm:h-auto sm:min-h-0 border border-slate-200 rounded-lg text-xs font-medium bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
                 {YEAR_OPTIONS.map(y => (
                   <option key={y} value={y}>
@@ -200,7 +206,7 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
             type="button"
             onClick={refreshAll}
             disabled={summaryLoading || pnlLoading}
-            className="p-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+            className="p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
             title="Refresh financials"
           >
             <RefreshCw className={`w-4 h-4 ${summaryLoading || pnlLoading ? 'animate-spin text-blue-600' : ''}`} />
@@ -209,7 +215,7 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
           <button
             type="button"
             onClick={handlePrint}
-            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs rounded-lg flex items-center space-x-1 shadow-sm"
+            className="px-3 py-2 sm:py-1.5 h-10 sm:h-auto min-h-[40px] sm:min-h-0 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs rounded-lg flex items-center space-x-1 shadow-sm"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Print / Export</span>
@@ -223,13 +229,13 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
             <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
             <div>
               <div className="font-semibold">The billing summary could not be loaded.</div>
-              <div className="text-rose-700 mt-0.5">{summaryError}</div>
+              <div className="text-rose-700 mt-0.5 break-words">{summaryError}</div>
             </div>
           </div>
           <button
             type="button"
             onClick={loadSummary}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-rose-200 rounded-lg font-semibold hover:bg-rose-100 shrink-0"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 min-h-[40px] sm:min-h-0 bg-white border border-rose-200 rounded-lg font-semibold hover:bg-rose-100 shrink-0"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Try again
           </button>
@@ -237,7 +243,7 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
       )}
 
       {/* Summary boxes */}
-      <section aria-label="Financial summary" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <section aria-label="Financial summary" className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-5">
         <SummaryCard
           title="Billable Amount"
           badge="College"
@@ -367,19 +373,19 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
       <section className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm space-y-4 min-w-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
           <div>
-            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+            <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2 min-w-0">
               <BarChart3 className="w-4 h-4 text-blue-600" />
               <span>Monthly Profit &amp; Loss ({year})</span>
             </h3>
-            <p className="text-[11px] text-slate-500 mt-0.5">Real revenue vs real expenses for every month, recalculated from the database on each load</p>
+            <p className="hidden sm:block text-[11px] text-slate-500 mt-0.5">Real revenue vs real expenses for every month, recalculated from the database on each load</p>
           </div>
-          <div className="flex items-center gap-2 print:hidden">
+          <div className="flex flex-wrap items-center gap-2 print:hidden">
             <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
               Year
               <select
                 value={year}
                 onChange={e => setYear(Number(e.target.value))}
-                className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="px-3 py-2 sm:py-1.5 h-10 sm:h-auto sm:min-h-0 border border-slate-200 rounded-lg text-xs font-medium bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
                 {YEAR_OPTIONS.map(y => (
                   <option key={y} value={y}>
@@ -392,7 +398,7 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
               type="button"
               onClick={() => { api.clearCache(); loadPnl(); }}
               disabled={pnlLoading}
-              className="p-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+              className="p-2.5 sm:p-2 min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 flex items-center justify-center border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50"
               title="Reload chart"
             >
               <RefreshCw className={`w-4 h-4 ${pnlLoading ? 'animate-spin text-blue-600' : ''}`} />
@@ -401,7 +407,7 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
         </div>
 
         {pnlTotals && !pnlLoading && !pnlError && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
             <TotalChip label="Revenue" value={formatINR(pnlTotals.income)} tone="emerald" />
             <TotalChip label="Expenses" value={formatINR(pnlTotals.expenses)} tone="rose" />
             <TotalChip
@@ -430,14 +436,14 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
         {pnl?.basis && (
           <p className="flex items-start gap-1.5 text-[11px] text-slate-500 bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">
             <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-slate-400" />
-            <span>{pnl.basis}</span>
+            <span className="min-w-0 break-words">{pnl.basis}</span>
           </p>
         )}
       </section>
 
       {/* Monthly ledger (real data) */}
       <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between gap-2">
           <h3 className="font-bold text-slate-900 text-sm">Monthly Ledger · {year}</h3>
           <span className="text-xs text-slate-500">Amounts in ₹</span>
         </div>
@@ -447,7 +453,60 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
         ) : pnlError ? (
           <div className="p-8 text-center text-xs text-rose-600">{pnlError}</div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="md:hidden divide-y divide-slate-100">
+            {(pnl?.monthlyData || []).map(row => {
+              const isSelected = scope === 'MONTH' && row.month === month;
+              const muted = !row.hasData;
+              const cell = (v: number) => (muted ? '—' : formatINR(v));
+              const dot = muted ? 'bg-slate-300' : row.profit >= 0 ? 'bg-emerald-500' : 'bg-rose-500';
+              return (
+                <button
+                  type="button"
+                  key={row.month}
+                  onClick={() => setDetailMonth(row.month)}
+                  className={`w-full text-left px-3 py-2.5 flex items-center gap-2 active:bg-slate-50 ${isSelected ? 'bg-blue-50/60' : ''} ${muted ? 'text-slate-400' : 'text-slate-700'}`}
+                >
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+                      <span className="text-[15px] font-semibold text-slate-900 truncate">{row.monthName} {year}</span>
+                      {isSelected && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-100 shrink-0">Selected</span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <Fact icon={TrendingUp} label="Revenue" tone={muted ? 'default' : 'good'}>{cell(row.income)}</Fact>
+                      <Fact icon={TrendingDown} label="Total costs" tone={muted ? 'default' : 'bad'}>{cell(row.expenses)}</Fact>
+                    </div>
+                  </div>
+                  <div className={`shrink-0 text-base font-bold tabular-nums ${muted ? 'text-slate-300' : row.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {muted ? '—' : formatINR(row.profit, { signed: true })}
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" aria-hidden="true" />
+                </button>
+              );
+            })}
+            {pnlTotals && (
+              <div className="px-3 py-2 space-y-1 bg-slate-50">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[15px] font-semibold text-slate-900">Total {year}</span>
+                  <span className={`shrink-0 text-base font-bold tabular-nums ${pnlTotals.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{formatINR(pnlTotals.profit, { signed: true })}</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="inline-flex items-baseline gap-1">
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Rev</span>
+                    <span className="text-[12px] font-semibold tabular-nums text-emerald-700">{formatINR(pnlTotals.income)}</span>
+                  </span>
+                  <span className="inline-flex items-baseline gap-1">
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Costs</span>
+                    <span className="text-[12px] font-semibold tabular-nums text-rose-700">{formatINR(pnlTotals.expenses)}</span>
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs min-w-[900px]">
               <thead className="bg-slate-50 text-slate-500 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-100">
                 <tr>
@@ -509,8 +568,34 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </section>
+      {(() => {
+        const row = detailMonth !== null ? (pnl?.monthlyData || []).find(r => r.month === detailMonth) : null;
+        if (!row) return null;
+        const muted = !row.hasData;
+        const cell = (v: number) => (muted ? '—' : formatINR(v));
+        return (
+          <DetailSheet
+            open
+            onClose={() => setDetailMonth(null)}
+            title={`${row.monthName} ${year}`}
+            subtitle={muted ? 'No data for this month' : `Margin ${formatPercent(row.profitMargin)}`}
+            headline={<span className={muted ? 'text-slate-300' : row.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}>{muted ? '—' : formatINR(row.profit, { signed: true })}</span>}
+            fields={[
+              { icon: Receipt, label: 'Mess fees', value: cell(row.messFees) },
+              { icon: PartyPopper, label: 'Party income', value: cell(row.partyIncome) },
+              { icon: Building2, label: 'College billing', value: cell(row.collegeBillingIncome) },
+              { icon: TrendingUp, label: 'Revenue', value: cell(row.income), tone: muted ? 'default' : 'good' },
+              { icon: Wallet, label: 'Expenses', value: cell(row.dayToDayExpenses) },
+              { icon: UserCog, label: 'Staff salary', value: cell(row.staffSalary) },
+              { icon: TrendingDown, label: 'Total costs', value: cell(row.expenses), tone: muted ? 'default' : 'bad' },
+              { icon: IndianRupee, label: row.profit >= 0 ? 'Net profit' : 'Net loss', value: muted ? '—' : formatINR(row.profit, { signed: true }), tone: muted ? 'default' : row.profit >= 0 ? 'good' : 'bad' },
+            ]}
+          />
+        );
+      })()}
     </div>
   );
 };
@@ -529,9 +614,9 @@ const TotalChip: React.FC<{ label: string; value: string; tone: keyof typeof chi
   tone,
   hint,
 }) => (
-  <div className={`rounded-lg border px-3 py-2 min-w-0 ${chipTones[tone]}`}>
+  <div className={`rounded-xl md:rounded-lg border p-2.5 md:px-3 md:py-2 min-w-0 ${chipTones[tone]}`}>
     <div className="text-[10px] uppercase tracking-wider font-semibold opacity-70">{label}</div>
-    <div className="text-sm font-bold truncate" title={value}>
+    <div className="text-lg md:text-sm font-bold leading-tight truncate" title={value}>
       {value}
     </div>
     {hint && <div className="text-[10px] opacity-70">{hint}</div>}

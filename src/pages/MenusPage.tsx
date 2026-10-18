@@ -8,6 +8,9 @@ import {
   Trash2,
   Copy,
 } from 'lucide-react';
+import { exportWeeklyMenu } from '../utils/menuPdf';
+import { menuStorage } from '../demo/demoMode';
+
 interface MenusPageProps {
   searchTerm: string;
   showToast: (type: 'success' | 'error' | 'info', text: string) => void;
@@ -86,7 +89,7 @@ export const MenusPage: React.FC<MenusPageProps> = ({ showToast }) => {
 
   const [cells, setCells] = useState<CellMap>(() => {
     try {
-      const raw = localStorage.getItem(CELLS_KEY);
+      const raw = menuStorage.getItem(CELLS_KEY);
       return raw ? (JSON.parse(raw) as CellMap) : {};
     } catch {
       return {};
@@ -94,25 +97,25 @@ export const MenusPage: React.FC<MenusPageProps> = ({ showToast }) => {
   });
 
   const [vendorName, setVendorName] = useState<string>(
-    () => localStorage.getItem(VENDOR_KEY) || 'Om Sai Caterers'
+    () => menuStorage.getItem(VENDOR_KEY) || 'Om Sai Caterers'
   );
   const [location, setLocation] = useState<string>(
-    () => localStorage.getItem(LOC_KEY) || 'PCCOE, Girls Hostel'
+    () => menuStorage.getItem(LOC_KEY) || 'PCCOE, Girls Hostel'
   );
   const [docNo, setDocNo] = useState<string>(
-    () => localStorage.getItem(DOC_NO_KEY) || 'CAM/DI/0'
+    () => menuStorage.getItem(DOC_NO_KEY) || 'CAM/DI/0'
   );
   const [revNo, setRevNo] = useState<string>(
-    () => localStorage.getItem(REV_NO_KEY) || '0.0'
+    () => menuStorage.getItem(REV_NO_KEY) || '0.0'
   );
 
   useEffect(() => {
-    try { localStorage.setItem(CELLS_KEY, JSON.stringify(cells)); } catch { /* noop */ }
+    try { menuStorage.setItem(CELLS_KEY, JSON.stringify(cells)); } catch { /* noop */ }
   }, [cells]);
-  useEffect(() => { localStorage.setItem(VENDOR_KEY, vendorName); }, [vendorName]);
-  useEffect(() => { localStorage.setItem(LOC_KEY, location); }, [location]);
-  useEffect(() => { localStorage.setItem(DOC_NO_KEY, docNo); }, [docNo]);
-  useEffect(() => { localStorage.setItem(REV_NO_KEY, revNo); }, [revNo]);
+  useEffect(() => { menuStorage.setItem(VENDOR_KEY, vendorName); }, [vendorName]);
+  useEffect(() => { menuStorage.setItem(LOC_KEY, location); }, [location]);
+  useEffect(() => { menuStorage.setItem(DOC_NO_KEY, docNo); }, [docNo]);
+  useEffect(() => { menuStorage.setItem(REV_NO_KEY, revNo); }, [revNo]);
 
   const weekEndISO = useMemo(() => getDayISO(weekStart, 6), [weekStart]);
   const weekRangeText = `${fmtDDMMYYYY(weekStart)} To ${fmtDDMMYYYY(weekEndISO)}`;
@@ -179,13 +182,22 @@ export const MenusPage: React.FC<MenusPageProps> = ({ showToast }) => {
   };
 
   // ============================================================
-  // PRINT — native browser print with a dedicated @media print
-  // stylesheet. No popups, no canvas rendering, no async image
-  // races — this always opens the OS print dialog, from which
-  // "Save as PDF" is available on every major browser.
+  // PRINT / PDF — browser print dialog on the web; on the Android app
+  // the table is rendered to a PDF file and shared (see utils/menuPdf).
   // ============================================================
-  const handlePrint = () => {
-    window.print();
+  const [isExporting, setIsExporting] = useState(false);
+  const handlePrint = async () => {
+    setIsExporting(true);
+    try {
+      await exportWeeklyMenu(`Weekly-Menu-${weekStart}`);
+    } catch (err: any) {
+      // The user closing the share sheet is not an error
+      if (!/cancel/i.test(String(err?.message || err))) {
+        showToast('error', 'Could not create the PDF. Please try again.');
+      }
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // ============================================================
@@ -383,34 +395,35 @@ export const MenusPage: React.FC<MenusPageProps> = ({ showToast }) => {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 sm:flex-wrap">
             <button
               onClick={copyPrevWeek}
-              className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-lg text-xs"
+              className="inline-flex items-center justify-center gap-2 min-h-10 sm:min-h-0 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-lg text-xs"
             >
               <Copy className="w-3.5 h-3.5" />
               <span>Copy Prev Week</span>
             </button>
             <button
               onClick={copyNextWeek}
-              className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-lg text-xs"
+              className="inline-flex items-center justify-center gap-2 min-h-10 sm:min-h-0 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-lg text-xs"
             >
               <Copy className="w-3.5 h-3.5" />
               <span>Copy to Next Week</span>
             </button>
             <button
               onClick={clearWeek}
-              className="inline-flex items-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3 py-2 rounded-lg text-xs"
+              className="inline-flex items-center justify-center gap-2 min-h-10 sm:min-h-0 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-3 py-2 rounded-lg text-xs"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Clear Week</span>
             </button>
             <button
               onClick={handlePrint}
-              className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-lg text-xs"
+              disabled={isExporting}
+              className="disabled:opacity-60 inline-flex items-center justify-center gap-2 min-h-10 sm:min-h-0 bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-lg text-xs"
             >
               <Printer className="w-4 h-4" />
-              <span>Print / Save PDF</span>
+              <span>{isExporting ? 'Creating PDF…' : 'Print / Save PDF'}</span>
             </button>
           </div>
         </div>
@@ -420,24 +433,24 @@ export const MenusPage: React.FC<MenusPageProps> = ({ showToast }) => {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setWeekStart(shiftWeek(weekStart, -7))}
-              className="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600"
+              className="p-2.5 sm:p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600"
               title="Previous week"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <div className="text-xs font-semibold text-slate-700 whitespace-nowrap">
+            <div className="text-xs font-semibold text-slate-700 sm:whitespace-nowrap">
               Week: <strong className="text-slate-900">{weekRangeText}</strong>
             </div>
             <button
               onClick={() => setWeekStart(shiftWeek(weekStart, 7))}
-              className="p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600"
+              className="p-2.5 sm:p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600"
               title="Next week"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
             <button
               onClick={() => setWeekStart(mondayOfWeek())}
-              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-semibold text-slate-700"
+              className="min-h-10 sm:min-h-0 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-semibold text-slate-700"
             >
               This Week
             </button>
@@ -445,46 +458,46 @@ export const MenusPage: React.FC<MenusPageProps> = ({ showToast }) => {
               type="date"
               value={weekStart}
               onChange={(e) => setWeekStart(e.target.value)}
-              className="px-2 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="min-h-10 sm:min-h-0 px-2 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
               title="Pick any Monday"
             />
           </div>
 
-          <div className="flex-1 flex flex-wrap items-center gap-x-4 gap-y-2 lg:pl-4 lg:border-l lg:border-slate-200">
-            <label className="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5 whitespace-nowrap">
+          <div className="flex-1 grid grid-cols-2 sm:flex sm:flex-wrap items-end sm:items-center gap-x-4 gap-y-2 lg:pl-4 lg:border-l lg:border-slate-200">
+            <label className="text-[11px] font-semibold text-slate-600 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-1.5 sm:whitespace-nowrap min-w-0">
               Vendor:
               <input
                 type="text"
                 value={vendorName}
                 onChange={(e) => setVendorName(e.target.value)}
-                className="w-36 px-2 py-1 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                className="w-full sm:w-36 min-h-10 sm:min-h-0 px-2 py-1 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-amber-500 focus:outline-none"
               />
             </label>
-            <label className="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5 whitespace-nowrap">
+            <label className="text-[11px] font-semibold text-slate-600 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-1.5 sm:whitespace-nowrap min-w-0">
               Location:
               <input
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="w-36 px-2 py-1 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                className="w-full sm:w-36 min-h-10 sm:min-h-0 px-2 py-1 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-amber-500 focus:outline-none"
               />
             </label>
-            <label className="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5 whitespace-nowrap">
+            <label className="text-[11px] font-semibold text-slate-600 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-1.5 sm:whitespace-nowrap min-w-0">
               Doc. No.:
               <input
                 type="text"
                 value={docNo}
                 onChange={(e) => setDocNo(e.target.value)}
-                className="w-24 px-2 py-1 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                className="w-full sm:w-24 min-h-10 sm:min-h-0 px-2 py-1 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-amber-500 focus:outline-none"
               />
             </label>
-            <label className="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5 whitespace-nowrap">
+            <label className="text-[11px] font-semibold text-slate-600 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-1.5 sm:whitespace-nowrap min-w-0">
               Rev. No.:
               <input
                 type="text"
                 value={revNo}
                 onChange={(e) => setRevNo(e.target.value)}
-                className="w-16 px-2 py-1 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                className="w-full sm:w-16 min-h-10 sm:min-h-0 px-2 py-1 text-xs border border-slate-300 rounded focus:ring-1 focus:ring-amber-500 focus:outline-none"
               />
             </label>
           </div>
@@ -492,7 +505,41 @@ export const MenusPage: React.FC<MenusPageProps> = ({ showToast }) => {
       </div>
 
       {/* ==================== EDITABLE TABLE (this is what prints) ==================== */}
-      <div className="bg-slate-100 border border-slate-200 rounded-xl shadow-sm p-4">
+      {/* Phone: per-day stacked editor (same data as the table) */}
+      <div className="md:hidden print:hidden space-y-3">
+        <div className="text-xs font-semibold text-slate-600 px-1">
+          Week: <strong className="text-slate-900">{weekRangeText}</strong>
+        </div>
+        {DAYS.map((day) => {
+          const dateISO = getDayISO(weekStart, day.offset);
+          const dayCells = cells[dateISO] || {};
+          return (
+            <div key={day.label} className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                <span className="text-sm font-bold text-slate-900">{day.label}</span>
+                <span className="text-[11px] text-slate-500">{fmtDDMMYYYY(dateISO)}</span>
+              </div>
+              <div className="p-3 space-y-3">
+                {ALL_MEALS.map((meal) => (
+                  <label key={meal.key} className="block">
+                    <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">
+                      {meal.label}
+                    </span>
+                    <textarea
+                      rows={3}
+                      value={dayCells[meal.key] || ''}
+                      onChange={(e) => setCell(dateISO, meal.key, e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden md:block print:block bg-slate-100 border border-slate-200 rounded-xl shadow-sm p-4">
         <div
           id="printable-menu"
           className="bg-white shadow-inner mx-auto"
@@ -608,7 +655,7 @@ export const MenusPage: React.FC<MenusPageProps> = ({ showToast }) => {
       </div>
 
       {/* Bottom hint */}
-      <div className="text-[11px] text-slate-500 text-center">
+      <div className="text-[11px] text-slate-500 text-center px-2">
         Tip: Type into the cells • Auto-saves • Click <strong>Print / Save PDF</strong> → Choose <strong>A4 Portrait</strong>.
       </div>
     </div>

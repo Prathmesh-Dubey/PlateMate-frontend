@@ -30,14 +30,14 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({ src, alt, title, o
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+        className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 p-2.5 min-w-10 min-h-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
         aria-label="Close preview"
       >
         <X className="w-5 h-5" />
       </button>
 
       {title && (
-        <div className="absolute top-4 left-4 right-16 text-white text-sm font-semibold truncate">
+        <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-4 right-16 text-white text-sm font-semibold truncate">
           {title}
         </div>
       )}
@@ -46,7 +46,7 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({ src, alt, title, o
         src={src}
         alt={alt || 'Preview'}
         onClick={(e) => e.stopPropagation()}
-        className="max-w-full max-h-full rounded-lg shadow-2xl object-contain"
+        className="max-w-full max-h-[85dvh] rounded-lg shadow-2xl object-contain"
       />
     </div>
   );

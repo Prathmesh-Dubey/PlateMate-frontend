@@ -208,7 +208,7 @@ export const ProfileImageUploader: React.FC<ProfileImageUploaderProps> = ({
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isBusy}
           title="Choose a photo"
-          className="absolute -bottom-1 -right-1 p-2 rounded-full bg-blue-600 text-white shadow hover:bg-blue-700 disabled:opacity-50"
+          className="absolute -bottom-1 -right-1 p-2.5 rounded-full bg-blue-600 text-white shadow hover:bg-blue-700 disabled:opacity-50"
         >
           <Camera className="w-3.5 h-3.5" />
         </button>
@@ -221,18 +221,18 @@ export const ProfileImageUploader: React.FC<ProfileImageUploaderProps> = ({
 
       {/* Controls */}
       <div className="flex-1 min-w-0 space-y-2.5">
-        <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-semibold">
+        <div className="flex sm:inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-semibold">
           <button
             type="button"
             onClick={() => { setMode('upload'); resetMessages(); }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors ${mode === 'upload' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`flex flex-1 sm:flex-none justify-center items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-md transition-colors ${mode === 'upload' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
           >
             <Upload className="w-3.5 h-3.5" /> Upload
           </button>
           <button
             type="button"
             onClick={() => { setMode('url'); resetMessages(); }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors ${mode === 'url' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`flex flex-1 sm:flex-none justify-center items-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-md transition-colors ${mode === 'url' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
           >
             <Link2 className="w-3.5 h-3.5" /> Image URL
           </button>
@@ -254,20 +254,20 @@ export const ProfileImageUploader: React.FC<ProfileImageUploaderProps> = ({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={disabled || isBusy}
-                className="px-3 py-1.5 text-xs font-medium border border-slate-300 rounded-lg bg-white hover:bg-slate-50 disabled:opacity-50"
+                className="px-3 py-2.5 sm:py-1.5 min-h-10 sm:min-h-0 text-xs font-medium border border-slate-300 rounded-lg bg-white hover:bg-slate-50 disabled:opacity-50"
               >
                 {selectedFile ? 'Choose another' : 'Choose image'}
               </button>
               {selectedFile && (
                 <>
-                  <span className="text-xs text-slate-600 truncate max-w-[180px]" title={selectedFile.name}>
+                  <span className="text-xs text-slate-600 truncate max-w-[60vw] sm:max-w-[180px]" title={selectedFile.name}>
                     {selectedFile.name} · {(selectedFile.size / 1024).toFixed(0)} KB
                   </span>
                   <button
                     type="button"
                     onClick={handleUpload}
                     disabled={disabled || isBusy}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-3 py-2.5 sm:py-1.5 min-h-10 sm:min-h-0 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
                   >
                     {busy === 'upload' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                     {busy === 'upload' ? 'Uploading…' : 'Save photo'}
@@ -276,7 +276,7 @@ export const ProfileImageUploader: React.FC<ProfileImageUploaderProps> = ({
                     type="button"
                     onClick={() => { setSelectedFile(null); setPreviewUrl(null); resetMessages(); }}
                     disabled={isBusy}
-                    className="p-1.5 text-slate-400 hover:text-slate-700"
+                    className="p-2.5 sm:p-1.5 text-slate-400 hover:text-slate-700"
                     title="Discard selection"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -295,13 +295,13 @@ export const ProfileImageUploader: React.FC<ProfileImageUploaderProps> = ({
                 onChange={e => { setUrlInput(e.target.value); resetMessages(); }}
                 placeholder="https://example.com/photo.jpg"
                 disabled={disabled || isBusy}
-                className="flex-1 min-w-0 px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="flex-1 min-w-0 px-3 py-2.5 sm:py-1.5 text-base sm:text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
               <button
                 type="button"
                 onClick={handleSetUrl}
                 disabled={disabled || isBusy || !urlInput.trim()}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 sm:py-1.5 min-h-10 sm:min-h-0 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50"
               >
                 {busy === 'url' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link2 className="w-3.5 h-3.5" />}
                 {busy === 'url' ? 'Saving…' : 'Use URL'}
@@ -323,7 +323,7 @@ export const ProfileImageUploader: React.FC<ProfileImageUploaderProps> = ({
             type="button"
             onClick={handleRemove}
             disabled={disabled || isBusy}
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-600 hover:text-rose-800 disabled:opacity-50"
+            className="inline-flex items-center gap-1 py-2 sm:py-0 text-[11px] font-medium text-rose-600 hover:text-rose-800 disabled:opacity-50"
           >
             {busy === 'remove' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
             Remove current picture
@@ -335,7 +335,7 @@ export const ProfileImageUploader: React.FC<ProfileImageUploaderProps> = ({
         {error && (
           <div className="flex items-start gap-1.5 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
             <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-            <span>{error}</span>
+            <span className="break-words min-w-0">{error}</span>
           </div>
         )}
         {success && (

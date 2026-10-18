@@ -7,6 +7,8 @@ import {
   CheckCircle2,
   Clock,
   Edit2,
+  Eye,
+  EyeOff,
   Fingerprint,
   Key,
   LogOut,
@@ -209,7 +211,7 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
       <div className="max-w-5xl mx-auto space-y-6 animate-pulse" aria-busy="true">
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div className="h-32 bg-slate-200" />
-          <div className="p-6 flex gap-5">
+          <div className="p-4 sm:p-6 flex gap-4 sm:gap-5">
             <div className="w-24 h-24 rounded-full bg-slate-200 -mt-16 ring-4 ring-white" />
             <div className="flex-1 space-y-2 pt-2">
               <div className="h-5 w-48 bg-slate-200 rounded" />
@@ -227,7 +229,7 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
 
   if (!profile) {
     return (
-      <div className="max-w-xl mx-auto bg-white rounded-xl border border-rose-200 p-8 text-center">
+      <div className="max-w-xl mx-auto bg-white rounded-xl border border-rose-200 p-6 sm:p-8 text-center">
         <AlertCircle className="w-10 h-10 text-rose-500 mx-auto mb-3" />
         <h2 className="text-lg font-bold text-slate-900">Profile unavailable</h2>
         <p className="text-sm text-slate-500 mt-1">{loadError || 'We could not load your account details.'}</p>
@@ -245,14 +247,14 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
   const isActive = profile.enabled !== false;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-4 sm:space-y-6">
       {loadError && (
         <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-xs flex items-start justify-between gap-3">
           <div className="flex items-start gap-2">
             <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
             <span>Showing cached account details. {loadError}</span>
           </div>
-          <button onClick={loadProfile} className="font-semibold hover:underline shrink-0">
+          <button onClick={loadProfile} className="font-semibold hover:underline shrink-0 py-2 -my-2">
             Reload
           </button>
         </div>
@@ -271,8 +273,8 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
               colorClass="bg-blue-50 text-blue-700"
             />
             <div className="flex-1 min-w-0 sm:pb-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-2xl font-bold text-slate-900 truncate">{profile.fullName}</h2>
+              <div className="flex flex-wrap items-center gap-2 min-w-0">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 truncate max-w-full">{profile.fullName}</h2>
                 <span
                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
                     isVerified ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
@@ -286,23 +288,23 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
                 <span className="inline-flex items-center gap-1">
                   <Shield className="w-3.5 h-3.5" /> {formatRole(profile.role)}
                 </span>
-                <span className="inline-flex items-center gap-1 truncate">
+                <span className="inline-flex items-center gap-1 max-w-full min-w-0 break-all">
                   <Mail className="w-3.5 h-3.5" /> {profile.email}
                 </span>
               </p>
             </div>
-            <div className="flex gap-2 shrink-0">
+            <div className="flex gap-2 w-full sm:w-auto sm:shrink-0">
               {!isEditing ? (
                 <button
                   onClick={startEdit}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] sm:min-h-0 w-full sm:w-auto text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm"
                 >
                   <Edit2 className="w-4 h-4" /> Edit Profile
                 </button>
               ) : (
                 <button
                   onClick={cancelEdit}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] sm:min-h-0 w-full sm:w-auto text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200"
                 >
                   <X className="w-4 h-4" /> Cancel
                 </button>
@@ -327,7 +329,7 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
         />
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {/* Personal information */}
         <section className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sm:p-6">
           <div className="flex items-center justify-between mb-4">
@@ -345,7 +347,7 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
                     type="text"
                     value={editData.fullName}
                     onChange={e => setEditData({ ...editData, fullName: e.target.value })}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                    className={`w-full px-3 py-2.5 sm:py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${
                       fieldErrors.fullName ? 'border-rose-400' : 'border-slate-300'
                     }`}
                     maxLength={100}
@@ -376,7 +378,7 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
                     type="tel"
                     value={editData.phoneNumber}
                     onChange={e => setEditData({ ...editData, phoneNumber: e.target.value })}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${
+                    className={`w-full px-3 py-2.5 sm:py-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none ${
                       fieldErrors.phoneNumber ? 'border-rose-400' : 'border-slate-300'
                     }`}
                     placeholder="9876543210"
@@ -403,11 +405,11 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
             )}
 
             {isEditing && (
-              <div className="flex flex-wrap gap-2 pt-1">
+              <div className="flex gap-2 pt-1">
                 <button
                   type="submit"
                   disabled={saving}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] sm:min-h-0 flex-1 sm:flex-none text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
                 >
                   {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   {saving ? 'Saving…' : 'Save Changes'}
@@ -416,7 +418,7 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
                   type="button"
                   onClick={cancelEdit}
                   disabled={saving}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200"
+                  className="px-4 py-2 min-h-[44px] sm:min-h-0 flex-1 sm:flex-none text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg border border-slate-200"
                 >
                   Cancel
                 </button>
@@ -460,7 +462,7 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
                   setShowChangePassword(true);
                   setPasswordError(null);
                 }}
-                className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800"
+                className="inline-flex items-center gap-2 min-h-[40px] text-sm font-medium text-blue-600 hover:text-blue-800"
               >
                 <Key className="w-4 h-4" /> Change Password
               </button>
@@ -470,7 +472,7 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
                   <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                     <Key className="w-4 h-4 text-slate-500" /> Change Password
                   </h4>
-                  <button type="button" onClick={() => setShowChangePassword(false)} className="text-slate-400 hover:text-slate-600">
+                  <button type="button" onClick={() => setShowChangePassword(false)} className="p-2.5 -m-2.5 text-slate-400 hover:text-slate-600" aria-label="Close">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
@@ -496,11 +498,11 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
                     <span>{passwordError}</span>
                   </div>
                 )}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex gap-2">
                   <button
                     type="submit"
                     disabled={passwordSaving}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] sm:min-h-0 flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg disabled:opacity-50"
                   >
                     {passwordSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
                     {passwordSaving ? 'Updating…' : 'Update Password'}
@@ -508,7 +510,7 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
                   <button
                     type="button"
                     onClick={() => setShowChangePassword(false)}
-                    className="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm rounded-lg"
+                    className="px-4 py-2 min-h-[44px] sm:min-h-0 flex-1 sm:flex-none border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm rounded-lg"
                   >
                     Cancel
                   </button>
@@ -529,7 +531,7 @@ export function ProfilePage({ user, showToast, onLogout, onUserUpdate }: Profile
         </div>
         <button
           onClick={onLogout}
-          className="inline-flex items-center gap-2 px-4 py-2 text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-200 font-medium shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] sm:min-h-0 w-full sm:w-auto text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-200 font-medium sm:shrink-0"
         >
           <LogOut className="w-4 h-4" /> Sign out
         </button>
@@ -578,20 +580,33 @@ const PasswordInput: React.FC<{ label: string; value: string; onChange: (v: stri
   value,
   onChange,
   placeholder,
-}) => (
-  <div>
-    <label className="block text-xs font-semibold text-slate-600 mb-1">{label}</label>
-    <input
-      type="password"
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-      placeholder={placeholder}
-      required
-      minLength={6}
-      autoComplete="new-password"
-    />
-  </div>
-);
+}) => {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div>
+      <label className="block text-xs font-semibold text-slate-600 mb-1">{label}</label>
+      <div className="relative">
+        <input
+          type={visible ? 'text' : 'password'}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          className="w-full pl-3 pr-11 py-2.5 sm:py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          placeholder={placeholder}
+          required
+          minLength={6}
+          autoComplete="new-password"
+        />
+        <button
+          type="button"
+          onClick={() => setVisible(v => !v)}
+          className="absolute right-0 top-1/2 -translate-y-1/2 p-2.5 text-slate-400 hover:text-slate-600"
+          aria-label={visible ? 'Hide password' : 'Show password'}
+        >
+          {visible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default ProfilePage;

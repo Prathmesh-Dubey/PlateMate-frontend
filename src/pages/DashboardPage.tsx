@@ -16,8 +16,15 @@ import {
   LogOut,
   Search,
   X,
+  ChevronRight,
+  Hash,
+  Utensils,
+  StickyNote,
+  MapPin,
+  Home,
 } from 'lucide-react';
 import api from '../api';
+import { Fact, DetailSheet } from '../components/DetailSheet';
 import type { Candidate } from '../types';
 import type { PageId } from '../components/Navigation';
 import { Avatar } from '../components/Avatar';
@@ -90,6 +97,7 @@ export const DashboardPage: React.FC<DashboardProps> = ({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [nameFilter, setNameFilter] = useState<string>('');
+  const [detailId, setDetailId] = useState<string | null>(null);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
@@ -478,26 +486,26 @@ export const DashboardPage: React.FC<DashboardProps> = ({
 
   // ---------------- RENDER ----------------
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <span>Monthly Mess Members & Fee Roster</span>
-            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 bg-white p-3 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div className="min-w-0">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-x-2 gap-y-1 sm:flex-wrap">
+            <span className="truncate sm:whitespace-normal">Monthly Mess Members & Fee Roster</span>
+            <span className="shrink-0 text-[10px] sm:text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
               Live Overview
             </span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="hidden sm:block text-xs text-slate-500 mt-0.5">
             Manage candidate start/end dates, monthly fees, membership status &
             renewable notifications
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => { api.clearCache(); fetchCandidates(); }}
             disabled={loading}
-            className="p-2 border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-600 transition-colors disabled:opacity-50"
+            className="p-2.5 sm:p-2 min-w-10 h-10 sm:h-auto sm:min-w-0 flex items-center justify-center border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-600 transition-colors disabled:opacity-50"
             title="Refresh list"
           >
             <RefreshCw
@@ -506,7 +514,7 @@ export const DashboardPage: React.FC<DashboardProps> = ({
           </button>
           <button
             onClick={openAdd}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg shadow-sm flex items-center space-x-1.5 transition-colors"
+            className="flex-1 sm:flex-none justify-center h-10 sm:h-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg shadow-sm flex items-center space-x-1.5 transition-colors"
           >
             <Plus className="w-4 h-4" />
             <span>Add New Member</span>
@@ -515,7 +523,7 @@ export const DashboardPage: React.FC<DashboardProps> = ({
       </div>
 
       {/* KPI Counters */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3">
         <KpiCard
           label="Total Enrolled"
           value={totalCount}
@@ -544,6 +552,7 @@ export const DashboardPage: React.FC<DashboardProps> = ({
           icon={<Bell className="w-4 h-4 text-amber-500" />}
         />
         <KpiCard
+          className="col-span-2 sm:col-span-1"
           label="Monthly Mess Fees"
           value={`₹${totalFeesExpected.toLocaleString()}`}
           hint="Expected monthly total"
@@ -552,8 +561,8 @@ export const DashboardPage: React.FC<DashboardProps> = ({
       </div>
 
       {/* Filters bar */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        <div className="flex items-center space-x-1.5 overflow-x-auto">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-1.5 overflow-x-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:pb-0 -mx-3 px-3 sm:-mx-1 sm:px-1">
           <FilterButton
             active={statusFilter === 'ALL'}
             onClick={() => setStatusFilter('ALL')}
@@ -593,12 +602,12 @@ export const DashboardPage: React.FC<DashboardProps> = ({
               value={nameFilter}
               onChange={(e) => setNameFilter(e.target.value)}
               placeholder="Filter by name..."
-              className="w-full pl-8 pr-7 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full h-10 sm:h-auto pl-8 pr-9 py-0 sm:py-1.5 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
             {nameFilter && (
               <button
                 onClick={() => setNameFilter('')}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
+                className="absolute right-0.5 top-1/2 -translate-y-1/2 p-2 sm:p-0.5 sm:right-1.5 hover:bg-slate-100 rounded"
                 title="Clear name filter"
               >
                 <X className="w-3 h-3 text-slate-400" />
@@ -620,11 +629,131 @@ export const DashboardPage: React.FC<DashboardProps> = ({
           Loading mess member roster...
         </div>
       ) : filteredCandidates.length === 0 ? (
-        <div className="p-12 text-center text-slate-400 text-xs bg-white rounded-xl border border-slate-200">
+        <div className="p-8 sm:p-12 text-center text-slate-400 text-xs bg-white rounded-xl border border-slate-200">
           No candidates found matching the selected filter.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+        <>
+        {/* Phone: compact list rows (tap a row for full details) */}
+        <div className="sm:hidden bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
+          {filteredCandidates.map((cand) => {
+            const key = resolveCandidateId(cand) || cand.fullName;
+            const due = isRenewableDue(cand);
+            const isActive = cand.status === 'ACTIVE';
+            const isLeft = cand.status === 'LEFT';
+            const monthEnd = getMonthEndDate(cand);
+            const phone = cand.phone || cand.phoneNumber;
+            const pillClass = isActive
+              ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+              : isLeft
+                ? 'bg-slate-200 text-slate-700 border-slate-300'
+                : 'bg-rose-100 text-rose-800 border-rose-200';
+            return (
+              <div key={key} className={`px-3 py-2.5 flex items-center gap-2.5 ${isLeft ? 'opacity-80' : ''}`}>
+                {resolveImageUrl(cand.profileImageUrl) ? (
+                  <button
+                    type="button"
+                    onClick={() => setZoomedCandidate(cand)}
+                    className="rounded-lg shrink-0"
+                    aria-label={`View ${cand.fullName}'s photo`}
+                  >
+                    <Avatar src={cand.profileImageUrl} name={cand.fullName} size="sm" rounded="xl" />
+                  </button>
+                ) : (
+                  <Avatar src={cand.profileImageUrl} name={cand.fullName} size="sm" rounded="xl" />
+                )}
+                <button
+                  type="button"
+                  onClick={() => setDetailId(String(key))}
+                  className="min-w-0 flex-1 flex items-center gap-2 text-left active:bg-slate-50"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-[15px] font-semibold text-slate-900 truncate">{cand.fullName}</span>
+                      <span className="text-sm font-bold tabular-nums text-slate-900 shrink-0">
+                        ₹{(cand.monthlyFee || cand.monthlyRate || 3000).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                      <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${pillClass}`}>
+                        {cand.status || 'INACTIVE'}
+                      </span>
+                      {phone && <Fact icon={Phone} label="Phone">{phone}</Fact>}
+                      <Fact icon={CalendarDays} label="Valid till" tone={due ? 'warn' : 'default'}>{monthEnd}</Fact>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" aria-hidden="true" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        {(() => {
+          const cand = detailId != null ? filteredCandidates.find((c) => String(resolveCandidateId(c) || c.fullName) === detailId) : undefined;
+          if (!cand) return null;
+          const due = isRenewableDue(cand);
+          const isActive = cand.status === 'ACTIVE';
+          const isLeft = cand.status === 'LEFT';
+          const isBusy = busyId === resolveCandidateId(cand);
+          const phone = cand.phone || cand.phoneNumber;
+          const pillClass = isActive
+            ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+            : isLeft
+              ? 'bg-slate-200 text-slate-700 border-slate-300'
+              : 'bg-rose-100 text-rose-800 border-rose-200';
+          return (
+            <DetailSheet
+              open
+              onClose={() => setDetailId(null)}
+              leading={<Avatar src={cand.profileImageUrl} name={cand.fullName} size="md" rounded="xl" />}
+              title={cand.fullName}
+              subtitle={cand.candidateId || `CND-${cand.id?.substring(0, 4) ?? '----'}`}
+              badges={
+                <>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${pillClass}`}>
+                    {cand.status || 'INACTIVE'}
+                  </span>
+                  {due && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                      Renewal due
+                    </span>
+                  )}
+                </>
+              }
+              headline={`₹${(cand.monthlyFee || cand.monthlyRate || 3000).toLocaleString()}`}
+              fields={[
+                ...(phone ? [{ icon: Phone, label: 'Phone', value: phone }] : []),
+                ...(cand.email ? [{ icon: Mail, label: 'Email', value: cand.email, wide: true }] : []),
+                { icon: CalendarDays, label: 'Joined', value: cand.joiningDate || '—' },
+                { icon: CalendarDays, label: 'Valid till', value: getMonthEndDate(cand), tone: due ? ('warn' as const) : ('default' as const) },
+                { icon: Utensils, label: 'Diet', value: cand.dietaryPreference || 'VEG' },
+                { icon: IndianRupee, label: 'Monthly fee', value: `₹${(cand.monthlyFee || cand.monthlyRate || 3000).toLocaleString()}` },
+                ...(cand.roomNumber ? [{ icon: Home, label: 'Room', value: cand.roomNumber }] : []),
+                ...(cand.leavingDate ? [{ icon: CalendarDays, label: 'Left on', value: cand.leavingDate }] : []),
+                ...(cand.address ? [{ icon: MapPin, label: 'Address', value: cand.address, wide: true }] : []),
+                ...(cand.emergencyContact || cand.emergencyPhone
+                  ? [{ icon: Phone, label: 'Emergency', value: [cand.emergencyContact, cand.emergencyPhone].filter(Boolean).join(' · '), wide: true }]
+                  : []),
+                ...(cand.notes ? [{ icon: StickyNote, label: 'Notes', value: cand.notes, wide: true }] : []),
+                { icon: Hash, label: 'Member ID', value: cand.candidateId || cand.id || '—' },
+              ]}
+              actions={[
+                { label: 'Renew', icon: RefreshCw, tone: 'primary' as const, onClick: () => { if (!isBusy) { setDetailId(null); handleRenewMembership(cand); } } },
+                { label: 'Edit', icon: Edit2, onClick: () => { setDetailId(null); openEdit(cand); } },
+                {
+                  label: isActive ? 'Mark inactive' : 'Mark active',
+                  icon: isActive ? UserX : UserCheck,
+                  onClick: () => { if (!isBusy) { setDetailId(null); handleToggleStatus(cand); } },
+                },
+                ...(!isLeft
+                  ? [{ label: 'Mark as left', icon: LogOut, onClick: () => { if (!isBusy) { setDetailId(null); handleMarkLeft(cand); } } }]
+                  : []),
+                { label: 'Delete', icon: Trash2, tone: 'danger' as const, onClick: () => { setDetailId(null); handleDeleteCandidate(cand); } },
+              ]}
+            />
+          );
+        })()}
+        <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
           {filteredCandidates.map((cand) => {
             const key = resolveCandidateId(cand) || cand.fullName;
             const due = isRenewableDue(cand);
@@ -643,113 +772,133 @@ export const DashboardPage: React.FC<DashboardProps> = ({
               ? 'Click to mark INACTIVE'
               : 'Click to mark ACTIVE';
 
+            const accent = due
+              ? 'bg-amber-500'
+              : isActive
+                ? 'bg-emerald-500'
+                : isLeft
+                  ? 'bg-slate-400'
+                  : 'bg-rose-500';
+            const phone = cand.phone || cand.phoneNumber;
+
             return (
               <div
                 key={key}
-                className={`bg-white rounded-xl border shadow-sm hover:shadow-md transition-shadow p-3.5 flex flex-col gap-2.5 ${isLeft ? 'border-slate-300 opacity-90' : 'border-slate-200'
+                className={`relative rounded-2xl border bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden ${isLeft ? 'border-slate-300 opacity-90' : 'border-slate-200'
                   }`}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    {resolveImageUrl(cand.profileImageUrl) ? (
-                      <button
-                        type="button"
-                        onClick={() => setZoomedCandidate(cand)}
-                        className="rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shrink-0"
-                        title={`View ${cand.fullName}'s photo`}
-                      >
-                        <Avatar
-                          src={cand.profileImageUrl}
-                          name={cand.fullName}
-                          size="md"
-                          rounded="xl"
-                          className="cursor-pointer hover:opacity-80 transition-opacity ring-1 ring-slate-200"
-                        />
-                      </button>
-                    ) : (
-                      <Avatar src={cand.profileImageUrl} name={cand.fullName} size="md" rounded="xl" />
-                    )}
-                    <div className="min-w-0">
-                      <div className="font-semibold text-sm text-slate-900 truncate">
-                        {cand.fullName}
+                <span className={`absolute inset-y-0 left-0 w-1 ${accent}`} />
+                <div className="p-4 pl-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {resolveImageUrl(cand.profileImageUrl) ? (
+                        <button
+                          type="button"
+                          onClick={() => setZoomedCandidate(cand)}
+                          className="rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shrink-0"
+                          title={`View ${cand.fullName}'s photo`}
+                        >
+                          <Avatar
+                            src={cand.profileImageUrl}
+                            name={cand.fullName}
+                            size="md"
+                            rounded="xl"
+                            className="cursor-pointer hover:opacity-80 transition-opacity ring-1 ring-slate-200"
+                          />
+                        </button>
+                      ) : (
+                        <Avatar src={cand.profileImageUrl} name={cand.fullName} size="md" rounded="xl" />
+                      )}
+                      <div className="min-w-0">
+                        <div className="text-[15px] font-semibold text-slate-900 leading-snug break-words">
+                          {cand.fullName}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono truncate">
+                          {cand.candidateId ||
+                            `CND-${cand.id?.substring(0, 4) ?? '----'}`}
+                        </div>
                       </div>
-                      <div className="text-[10px] text-slate-400 font-mono truncate">
-                        {cand.candidateId ||
-                          `CND-${cand.id?.substring(0, 4) ?? '----'}`}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-lg font-bold tabular-nums text-slate-900">
+                        ₹
+                        {(
+                          cand.monthlyFee ||
+                          cand.monthlyRate ||
+                          3000
+                        ).toLocaleString()}
+                      </div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        per month
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleToggleStatus(cand)}
-                    disabled={isBusy}
-                    title={pillTitle}
-                    className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors disabled:opacity-50 ${pillClass}`}
-                  >
-                    {isBusy ? '...' : cand.status || 'INACTIVE'}
-                  </button>
-                </div>
 
-                <div className="space-y-1 text-[11px] text-slate-600">
-                  <div className="flex items-center gap-1.5">
-                    <Phone className="w-3 h-3 text-slate-400 shrink-0" />
-                    <span className="truncate">
-                      {cand.phone || cand.phoneNumber || '-'}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Mail className="w-3 h-3 text-slate-400 shrink-0" />
-                    <span className="truncate">{cand.email || '—'}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CalendarDays className="w-3 h-3 text-slate-400 shrink-0" />
-                    <span className="truncate">
-                      {cand.joiningDate || '-'} → {monthEnd}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
-                  <div className="text-sm font-bold text-slate-900">
-                    ₹
-                    {(
-                      cand.monthlyFee ||
-                      cand.monthlyRate ||
-                      3000
-                    ).toLocaleString()}
-                    <span className="text-[10px] font-normal text-slate-400">
-                      /mo
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => handleToggleStatus(cand)}
+                      disabled={isBusy}
+                      title={pillTitle}
+                      className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-colors disabled:opacity-50 ${pillClass}`}
+                    >
+                      {isBusy ? '...' : cand.status || 'INACTIVE'}
+                    </button>
+                    <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                       {cand.dietaryPreference || 'VEG'}
                     </span>
                     {due && (
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
-                        Due
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200">
+                        Renewal due
                       </span>
+                    )}
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
+                    {phone && (
+                      <div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Phone</div>
+                        <div className="text-[13px] font-medium text-slate-800 break-words">{phone}</div>
+                      </div>
+                    )}
+                    {cand.joiningDate && (
+                      <div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Joined</div>
+                        <div className="text-[13px] font-medium text-slate-800 break-words">{cand.joiningDate}</div>
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Valid till</div>
+                      <div className="text-[13px] font-medium text-slate-800 break-words">{monthEnd}</div>
+                    </div>
+                    {cand.email && (
+                      <div className="col-span-2">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Email</div>
+                        <div className="text-[13px] font-medium text-slate-800 break-all">{cand.email}</div>
+                      </div>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 pt-1">
+                <div className="border-t border-slate-100 bg-slate-50/70 px-3 py-2.5 flex items-center gap-2">
                   <button
                     onClick={() => handleRenewMembership(cand)}
                     disabled={isBusy}
-                    className="flex-1 px-2 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold border border-amber-200 rounded text-[10px] transition-colors disabled:opacity-50"
+                    aria-label="Renew membership"
+                    className="mr-auto min-h-10 px-3 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 bg-blue-600 text-white disabled:opacity-50"
                     title="Renew Mess Membership (sets back to ACTIVE)"
                   >
-                    Renew
+                    <RefreshCw className="w-4 h-4" /> Renew
                   </button>
 
                   {!isLeft && (
                     <button
                       onClick={() => handleMarkLeft(cand)}
                       disabled={isBusy}
-                      className="flex-1 px-2 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold border border-slate-200 rounded text-[10px] transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
+                      aria-label="Mark as left"
+                      className="min-h-10 px-3 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 disabled:opacity-50"
                       title="Mark member as LEFT"
                     >
-                      <LogOut className="w-3 h-3" />
+                      <LogOut className="w-4 h-4" />
                       <span>Left</span>
                     </button>
                   )}
@@ -757,30 +906,33 @@ export const DashboardPage: React.FC<DashboardProps> = ({
                   <button
                     onClick={() => openEdit(cand)}
                     disabled={isBusy}
-                    className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-blue-600 transition-colors disabled:opacity-50"
+                    aria-label="Edit member"
+                    className="min-h-10 px-3 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 disabled:opacity-50"
                     title="Edit Member"
                   >
-                    <Edit2 className="w-3.5 h-3.5" />
+                    <Edit2 className="w-4 h-4" /> Edit
                   </button>
                   <button
                     onClick={() => handleDeleteCandidate(cand)}
                     disabled={isBusy}
-                    className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-rose-600 transition-colors disabled:opacity-50"
+                    aria-label="Delete member"
+                    className="min-h-10 px-3 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 bg-rose-50 border border-rose-100 text-rose-700 disabled:opacity-50"
                     title="Delete Permanently"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" /> Delete
                   </button>
                 </div>
               </div>
             );
           })}
         </div>
+        </>
       )}
 
       {/* Add / Edit Modal */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-white rounded-xl max-w-md w-full p-4 sm:p-6 shadow-xl border border-slate-200 space-y-4 max-h-[92dvh] overflow-y-auto">
             <h3 className="text-base font-bold text-slate-900">
               {editingCandidate
                 ? 'Edit Monthly Mess Member'
@@ -838,11 +990,11 @@ export const DashboardPage: React.FC<DashboardProps> = ({
                   onChange={(e) =>
                     setForm({ ...form, fullName: e.target.value })
                   }
-                  className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
                     Phone Number *
@@ -855,7 +1007,7 @@ export const DashboardPage: React.FC<DashboardProps> = ({
                     onChange={(e) =>
                       setForm({ ...form, phone: e.target.value })
                     }
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -869,7 +1021,7 @@ export const DashboardPage: React.FC<DashboardProps> = ({
                     onChange={(e) =>
                       setForm({ ...form, email: e.target.value })
                     }
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -885,11 +1037,11 @@ export const DashboardPage: React.FC<DashboardProps> = ({
                   onChange={(e) =>
                     setForm({ ...form, address: e.target.value })
                   }
-                  className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
                     Start Date
@@ -900,7 +1052,7 @@ export const DashboardPage: React.FC<DashboardProps> = ({
                     onChange={(e) =>
                       setForm({ ...form, joiningDate: e.target.value })
                     }
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -916,12 +1068,12 @@ export const DashboardPage: React.FC<DashboardProps> = ({
                         monthlyFee: parseFloat(e.target.value) || 0,
                       })
                     }
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-slate-900"
+                    className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-slate-900"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
                     Emergency Contact
@@ -933,7 +1085,7 @@ export const DashboardPage: React.FC<DashboardProps> = ({
                     onChange={(e) =>
                       setForm({ ...form, emergencyContact: e.target.value })
                     }
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -947,12 +1099,12 @@ export const DashboardPage: React.FC<DashboardProps> = ({
                     onChange={(e) =>
                       setForm({ ...form, emergencyPhone: e.target.value })
                     }
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">
                     Membership Status
@@ -965,7 +1117,7 @@ export const DashboardPage: React.FC<DashboardProps> = ({
                         status: e.target.value as CandidateStatus,
                       })
                     }
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
                     <option value="ACTIVE">ACTIVE</option>
                     <option value="INACTIVE">INACTIVE</option>
@@ -980,7 +1132,7 @@ export const DashboardPage: React.FC<DashboardProps> = ({
                     onChange={(e) =>
                       setForm({ ...form, dietaryPreference: e.target.value })
                     }
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
                     <option value="VEG">VEG</option>
                     <option value="NON_VEG">NON-VEG</option>
@@ -1000,11 +1152,11 @@ export const DashboardPage: React.FC<DashboardProps> = ({
                   onChange={(e) =>
                     setForm({ ...form, notes: e.target.value })
                   }
-                  className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                  className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
                 />
               </div>
 
-              <div className="pt-3 flex items-center justify-end space-x-2">
+              <div className="pt-3 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -1012,13 +1164,13 @@ export const DashboardPage: React.FC<DashboardProps> = ({
                     setEditingCandidate(null);
                     setPendingImage(null);
                   }}
-                  className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600"
+                  className="min-h-[44px] sm:min-h-0 px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm"
+                  className="min-h-[44px] sm:min-h-0 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm"
                 >
                   Save Member
                 </button>
@@ -1049,14 +1201,15 @@ const KpiCard: React.FC<{
   hint: string;
   icon: React.ReactNode;
   valueClass?: string;
-}> = ({ label, value, hint, icon, valueClass = 'text-slate-900' }) => (
-  <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-    <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
-      <span>{label}</span>
-      {icon}
+  className?: string;
+}> = ({ label, value, hint, icon, valueClass = 'text-slate-900', className = '' }) => (
+  <div className={`bg-white p-2.5 sm:p-4 rounded-xl border border-slate-200 shadow-sm min-w-0 ${className}`}>
+    <div className="flex items-center justify-between gap-1 text-slate-500 text-[11px] sm:text-xs font-semibold sm:font-medium">
+      <span className="truncate">{label}</span>
+      <span className="shrink-0 [&>svg]:w-3.5 [&>svg]:h-3.5 sm:[&>svg]:w-4 sm:[&>svg]:h-4">{icon}</span>
     </div>
-    <div className={`text-2xl font-bold mt-1 ${valueClass}`}>{value}</div>
-    <div className="text-[11px] text-slate-400 mt-0.5">{hint}</div>
+    <div className={`text-lg sm:text-2xl leading-tight font-bold mt-0.5 sm:mt-1 truncate ${valueClass}`}>{value}</div>
+    <div className="hidden sm:block text-[11px] text-slate-400 mt-0.5">{hint}</div>
   </div>
 );
 
@@ -1068,7 +1221,7 @@ const FilterButton: React.FC<{
 }> = ({ active, onClick, activeClass, children }) => (
   <button
     onClick={onClick}
-    className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${active
+    className={`px-3 h-8 sm:h-auto sm:py-1.5 shrink-0 text-xs font-semibold sm:font-medium rounded-full sm:rounded-lg whitespace-nowrap transition-colors ${active
         ? `${activeClass} shadow-sm`
         : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
       }`}

@@ -1,6 +1,10 @@
 // src/pages/SignUpPage.tsx
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, AlertCircle, Loader2, User, Phone } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, Loader2, User, Phone, KeyRound } from 'lucide-react';
+
+// Access key required to create an account (keeps unknown users out).
+// NOTE: this check runs in the browser, so it only deters casual sign-ups; enforce it on the backend too for real protection.
+const SIGNUP_ACCESS_KEY = 'plate15';
 import api from '../api';
 
 interface SignUpPageProps {
@@ -16,8 +20,11 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
     phoneNumber: '',
     password: '',
     confirmPassword: '',
+    accessKey: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showAccessKey, setShowAccessKey] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,6 +42,11 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (formData.accessKey.trim() !== SIGNUP_ACCESS_KEY) {
+      setError('Invalid access key. Please contact the administrator.');
+      return;
+    }
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
@@ -127,23 +139,23 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
   // OTP Verification UI
   if (showOtpVerification) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
-          <div className="text-center mb-8">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-3 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-5 sm:p-8">
+          <div className="text-center mb-6 sm:mb-8">
             <div className="w-16 h-16 bg-green-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
               <Mail className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900">Verify Your Email</h2>
             <p className="text-gray-600 mt-2 text-sm">
               We've sent a 6-digit OTP to <br />
-              <span className="font-semibold text-gray-900">{registrationEmail}</span>
+              <span className="font-semibold text-gray-900 break-all">{registrationEmail}</span>
             </p>
           </div>
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{error}</span>
+              <span className="break-words min-w-0">{error}</span>
             </div>
           )}
 
@@ -156,7 +168,7 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
                 type="text"
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full px-4 py-3 text-center text-2xl tracking-[0.5em] border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-2 sm:px-4 py-3 text-center text-2xl tracking-[0.3em] sm:tracking-[0.5em] border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="· · · · · ·"
                 required
                 maxLength={6}
@@ -170,7 +182,7 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
             <button
               type="submit"
               disabled={isVerifying}
-              className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full min-h-11 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isVerifying ? (
                 <>
@@ -189,7 +201,7 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
               <button
                 onClick={handleResendOtp}
                 disabled={isResending}
-                className="text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50"
+                className="text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50 py-2 px-1"
               >
                 {isResending ? (
                   <>
@@ -209,7 +221,7 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
                 setError('');
                 onBackToLogin();
               }}
-              className="mt-2 text-sm text-gray-500 hover:text-gray-700"
+              className="mt-2 py-2 px-3 text-sm text-gray-500 hover:text-gray-700"
             >
               ← Back to Login
             </button>
@@ -221,19 +233,19 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
 
   // Sign Up Form
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-3 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-5 sm:p-8">
         {/* Logo/Brand */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <img src="/logo.png" alt="PlateMate logo" className="w-16 h-16 rounded-2xl mx-auto mb-4 object-contain shadow-sm" />
-          <h2 className="text-3xl font-bold text-gray-900">Create Account</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Create Account</h2>
           <p className="text-gray-600 mt-2">Join PlateMate today</p>
         </div>
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>{error}</span>
+            <span className="break-words min-w-0">{error}</span>
           </div>
         )}
 
@@ -249,7 +261,7 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full pl-10 pr-3 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="Enter your full name"
                 required
               />
@@ -267,7 +279,7 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full pl-10 pr-3 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="Enter your email"
                 required
               />
@@ -285,7 +297,7 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
                 name="phoneNumber"
                 value={formData.phoneNumber}
                 onChange={handleChange}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full pl-10 pr-3 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="Enter phone number"
                 required
               />
@@ -303,7 +315,7 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full pl-10 pr-10 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="Create a password (min 6 chars)"
                 required
                 minLength={6}
@@ -311,35 +323,71 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 p-3 text-gray-400 hover:text-gray-600"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
-          <div className="mb-6">
+          <div className="mb-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Confirm Password *
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showConfirmPassword ? 'text' : 'password'}
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full pl-10 pr-10 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="Confirm your password"
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 p-3 text-gray-400 hover:text-gray-600"
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Access Key *
+            </label>
+            <div className="relative">
+              <KeyRound className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type={showAccessKey ? 'text' : 'password'}
+                name="accessKey"
+                value={formData.accessKey}
+                onChange={handleChange}
+                autoComplete="off"
+                className="w-full pl-10 pr-10 py-2.5 text-base sm:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                placeholder="Enter the access key"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowAccessKey(!showAccessKey)}
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 p-3 text-gray-400 hover:text-gray-600"
+                aria-label={showAccessKey ? 'Hide key' : 'Show key'}
+              >
+                {showAccessKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full min-h-11 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>
@@ -358,7 +406,7 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
             <button
               type="button"
               onClick={onBackToLogin}
-              className="text-blue-600 hover:text-blue-800 font-medium"
+              className="text-blue-600 hover:text-blue-800 font-medium py-2 px-1"
             >
               Sign In
             </button>

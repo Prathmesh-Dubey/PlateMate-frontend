@@ -22,9 +22,17 @@ import {
   FileText,
   Trash2,
   Edit2,
-  Hash
+  Hash,
+  SlidersHorizontal,
+  Store,
+  Package,
+  Phone,
+  StickyNote,
+  ChevronRight,
+  CreditCard
 } from 'lucide-react';
 import api from '../api';
+import { Fact, DetailSheet } from '../components/DetailSheet';
 import type { Expense } from '../types';
 
 interface TotalExpensesPageProps {
@@ -67,6 +75,8 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
   const [vendorFilter, setVendorFilter] = useState<string>('');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [detail, setDetail] = useState<Expense | null>(null);
   const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'PAID' | 'UNPAID'>('ALL');
 
   // ✅ Form with unit dropdown, payment status, and invoice/receipt/check number
@@ -252,6 +262,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
   };
 
   const hasActiveFilters = vendorFilter || dateFrom || dateTo || paymentFilter !== 'ALL';
+  const activeFilterCount = [!!vendorFilter, !!dateFrom, !!dateTo, paymentFilter !== 'ALL'].filter(Boolean).length;
 
   // ✅ Filtered expenses with vendor, date, category, and payment status filters
   const filtered = useMemo(() => {
@@ -328,24 +339,24 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header & Add Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 bg-white p-3 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Total Categorized Mess Supplies & Expenses</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Track procurement costs, paid & unpaid statuses, and invoice/receipt numbers by category</p>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900">Total Categorized Mess Supplies & Expenses</h2>
+          <p className="hidden sm:block text-xs text-slate-500 mt-0.5">Track procurement costs, paid & unpaid statuses, and invoice/receipt numbers by category</p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => { api.clearCache(); fetchExpenses(); }}
             title="Refresh expenses"
-            className="p-2 border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-600 transition-colors"
+            className="w-10 h-10 sm:w-auto sm:h-auto sm:p-2 shrink-0 flex items-center justify-center border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-600 transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button
             onClick={openAddModal}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg shadow-sm flex items-center space-x-1.5 transition-colors cursor-pointer"
+            className="flex-1 sm:flex-none justify-center h-10 sm:h-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg shadow-sm flex items-center space-x-1.5 transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Item Expense</span>
@@ -354,59 +365,59 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
       </div>
 
       {/* ✅ Dynamic Summary Information KPI Cards (Total Expenses, Total Paid, Total Unpaid) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
         {/* Total Expenses */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-500 font-medium">Total Expenses</div>
-            <div className="text-2xl font-bold text-slate-900 mt-0.5">
+        <div className="bg-white p-2.5 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="min-w-0">
+            <div className="text-[11px] sm:text-xs truncate text-slate-500 font-medium">Total Expenses</div>
+            <div className="text-lg sm:text-2xl leading-tight font-bold text-slate-900 mt-0.5 break-words">
               ₹{dynamicSummary.totalExpensesAmount.toLocaleString()}
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">
+            <div className="hidden sm:block text-[11px] text-slate-400 mt-0.5">
               {dynamicSummary.totalExpensesCount} expense {dynamicSummary.totalExpensesCount === 1 ? 'record' : 'records'}
             </div>
           </div>
-          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
-            <IndianRupee className="w-5 h-5" />
+          <div className="p-1.5 sm:p-2.5 shrink-0 ml-1 bg-blue-50 text-blue-600 rounded-lg">
+            <IndianRupee className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </div>
         </div>
 
         {/* Total Paid */}
-        <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-xs flex items-center justify-between bg-emerald-50/20">
-          <div>
-            <div className="text-xs text-emerald-700 font-medium">Total Paid</div>
-            <div className="text-2xl font-bold text-emerald-700 mt-0.5">
+        <div className="bg-white p-2.5 sm:p-4 rounded-xl border border-emerald-100 shadow-xs flex items-center justify-between bg-emerald-50/20">
+          <div className="min-w-0">
+            <div className="text-[11px] sm:text-xs truncate text-emerald-700 font-medium">Total Paid</div>
+            <div className="text-lg sm:text-2xl leading-tight font-bold text-emerald-700 mt-0.5">
               ₹{dynamicSummary.totalPaidAmount.toLocaleString()}
             </div>
-            <div className="text-[11px] text-emerald-600/80 mt-0.5">
+            <div className="hidden sm:block text-[11px] text-emerald-600/80 mt-0.5">
               {dynamicSummary.totalPaidCount} bills settled
             </div>
           </div>
-          <div className="p-2.5 bg-emerald-100/70 text-emerald-700 rounded-lg">
-            <CheckCircle2 className="w-5 h-5" />
+          <div className="p-1.5 sm:p-2.5 shrink-0 ml-1 bg-emerald-100/70 text-emerald-700 rounded-lg">
+            <CheckCircle2 className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </div>
         </div>
 
         {/* Total Unpaid */}
-        <div className="bg-white p-4 rounded-xl border border-rose-100 shadow-xs flex items-center justify-between bg-rose-50/20">
-          <div>
-            <div className="text-xs text-rose-700 font-medium">Total Unpaid</div>
-            <div className="text-2xl font-bold text-rose-700 mt-0.5">
+        <div className="col-span-2 sm:col-span-1 bg-white p-2.5 sm:p-4 rounded-xl border border-rose-100 shadow-xs flex items-center justify-between bg-rose-50/20">
+          <div className="min-w-0">
+            <div className="text-[11px] sm:text-xs truncate text-rose-700 font-medium">Total Unpaid</div>
+            <div className="text-lg sm:text-2xl leading-tight font-bold text-rose-700 mt-0.5">
               ₹{dynamicSummary.totalUnpaidAmount.toLocaleString()}
             </div>
-            <div className="text-[11px] text-rose-600/80 mt-0.5">
+            <div className="hidden sm:block text-[11px] text-rose-600/80 mt-0.5">
               {dynamicSummary.totalUnpaidCount} bills pending
             </div>
           </div>
-          <div className="p-2.5 bg-rose-100/70 text-rose-700 rounded-lg">
-            <Clock className="w-5 h-5" />
+          <div className="p-1.5 sm:p-2.5 shrink-0 ml-1 bg-rose-100/70 text-rose-700 rounded-lg">
+            <Clock className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </div>
         </div>
       </div>
 
       {/* ✅ Filters: Vendor, Date, and Paid / Unpaid Status */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
+      <div className="bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-sm">
+        <div className="hidden md:flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-slate-500" />
             <span className="text-sm font-semibold text-slate-700">Filters</span>
@@ -417,15 +428,42 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer py-2 pl-2"
             >
               Clear All Filters
             </button>
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div>
+        {/* Phone: search + Filters toggle */}
+        <div className="flex items-center gap-2 md:hidden">
+          <div className="relative flex-1 min-w-0">
+            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search vendor..."
+              value={vendorFilter}
+              onChange={(e) => setVendorFilter(e.target.value)}
+              className="w-full pl-9 pr-3 h-10 border border-slate-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(o => !o)}
+            aria-label="Toggle filters"
+            aria-expanded={filtersOpen}
+            className="h-10 px-3 shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold inline-flex items-center justify-center">{activeFilterCount}</span>
+            )}
+          </button>
+        </div>
+
+        <div className={`${filtersOpen ? 'grid' : 'hidden'} md:grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mt-2 md:mt-0`}>
+          <div className="hidden md:block">
             <label className="block text-xs font-medium text-slate-600 mb-1">Search by Vendor</label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
@@ -439,12 +477,12 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Payment Status</label>
+          <div className="col-span-2 sm:col-span-1">
+            <label className="block text-[11px] sm:text-xs font-medium text-slate-600 mb-1">Payment Status</label>
             <select
               value={paymentFilter}
               onChange={(e) => setPaymentFilter(e.target.value as 'ALL' | 'PAID' | 'UNPAID')}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              className="w-full px-3 h-10 sm:h-auto sm:py-2 border border-slate-300 rounded-lg text-base sm:text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="ALL">All Payment Statuses</option>
               <option value="PAID">Paid Only</option>
@@ -453,35 +491,44 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">From Date</label>
+            <label className="block text-[11px] sm:text-xs font-medium text-slate-600 mb-1">From Date</label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                className="w-full pl-9 pr-2 h-10 sm:h-auto sm:py-2 border border-slate-300 rounded-lg text-base sm:text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">To Date</label>
+            <label className="block text-[11px] sm:text-xs font-medium text-slate-600 mb-1">To Date</label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                className="w-full pl-9 pr-2 h-10 sm:h-auto sm:py-2 border border-slate-300 rounded-lg text-base sm:text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
               />
             </div>
           </div>
+
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="md:hidden col-span-2 text-xs text-blue-600 font-semibold py-1"
+            >
+              Clear all
+            </button>
+          )}
         </div>
       </div>
 
       {/* Category Totals Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2 sm:gap-4">
         {CATEGORIES.map(cat => {
           const Icon = cat.icon;
           const total = categoryTotals[cat.id] || 0;
@@ -490,17 +537,17 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
             <div
               key={cat.id}
               onClick={() => setSelectedCategory(isSelected ? 'ALL' : cat.id)}
-              className={`p-4 rounded-xl border transition-all cursor-pointer ${
+              className={`p-2.5 sm:p-4 rounded-xl border transition-all cursor-pointer min-w-0 ${
                 isSelected
                   ? 'bg-blue-50/80 border-blue-500 shadow-sm ring-1 ring-blue-500'
                   : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500 line-clamp-1">{cat.label}</span>
+                <span className="text-[10px] sm:text-xs font-semibold uppercase sm:normal-case tracking-wide sm:tracking-normal text-slate-500 line-clamp-1">{cat.label}</span>
                 <Icon className="w-4 h-4 text-blue-600 shrink-0 ml-1" />
               </div>
-              <div className="text-lg font-bold text-slate-900 mt-2">₹{total.toLocaleString()}</div>
+              <div className="text-lg sm:text-lg leading-tight font-bold text-slate-900 mt-1 sm:mt-2 truncate">₹{total.toLocaleString()}</div>
               <div className="text-[10px] text-slate-400 mt-0.5">
                 {expenses.filter(e => e.category?.toUpperCase() === cat.id).length} entries
               </div>
@@ -523,13 +570,92 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
 
         {/* Table */}
         {loading ? (
-          <div className="p-8 text-center text-xs text-slate-500">Loading categorized expenses...</div>
+          <div className="p-6 sm:p-8 text-center text-xs text-slate-500">Loading categorized expenses...</div>
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-xs">
+          <div className="p-8 sm:p-12 text-center text-slate-400 text-xs">
             No expenses found matching your criteria.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Mobile card list */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {filtered.map(item => {
+              const paid = isExpensePaid(item);
+              const amount = item.totalAmount || ((item.quantity || 1) * (item.rate || 0));
+              return (
+                <button
+                  type="button"
+                  key={item.id}
+                  onClick={() => setDetail(item)}
+                  className="w-full text-left active:bg-slate-50 flex items-center gap-2 px-3 py-2.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <div className="text-[15px] font-semibold text-slate-900 truncate min-w-0">{item.itemName}</div>
+                      <div className="text-base font-bold tabular-nums text-slate-900 shrink-0">₹{amount.toLocaleString()}</div>
+                    </div>
+                    <div className="mt-1 flex items-center gap-x-3 gap-y-1 min-w-0">
+                      {paid ? (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          Paid
+                        </span>
+                      ) : (
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
+                          <Clock className="w-3 h-3 text-rose-600" />
+                          Unpaid
+                        </span>
+                      )}
+                      {item.expenseDate && <Fact icon={Calendar} label="Date">{item.expenseDate}</Fact>}
+                      {item.vendorName && <Fact icon={Store} label="Vendor">{item.vendorName}</Fact>}
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" aria-hidden="true" />
+                </button>
+              );
+            })}
+          </div>
+          {(() => {
+            const d = detail ? (expenses.find(e => e.id && e.id === detail.id) || detail) : null;
+            if (!d) return null;
+            const dPaid = isExpensePaid(d);
+            const dAmount = d.totalAmount || ((d.quantity || 1) * (d.rate || 0));
+            return (
+              <DetailSheet
+                open
+                onClose={() => setDetail(null)}
+                title={d.itemName}
+                subtitle={d.expenseDate || undefined}
+                badges={
+                  <>
+                    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${dPaid ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-rose-200 bg-rose-50 text-rose-700'}`}>
+                      {dPaid ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                      {dPaid ? 'Paid' : 'Unpaid'}
+                    </span>
+                    <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                      {d.category || 'GENERAL'}
+                    </span>
+                  </>
+                }
+                headline={<>₹{dAmount.toLocaleString()}</>}
+                fields={[
+                  { icon: Calendar, label: 'Date', value: d.expenseDate || '-' },
+                  { icon: Package, label: 'Quantity & rate', value: `${d.quantity || 1} ${d.unit || ''} @ ₹${d.rate || 0}/${d.unit || 'unit'}` },
+                  { icon: Store, label: 'Vendor', value: d.vendorName || '-' },
+                  ...(d.vendorPhone ? [{ icon: Phone, label: 'Vendor phone', value: d.vendorPhone }] : []),
+                  ...(d.invoiceNumber ? [{ icon: FileText, label: 'Invoice / receipt', value: d.invoiceNumber }] : []),
+                  { icon: CreditCard, label: 'Payment', value: d.paymentMethod || 'CASH' },
+                  ...(d.subCategory ? [{ icon: Tag, label: 'Sub-category', value: d.subCategory }] : []),
+                  ...(d.remarks ? [{ icon: StickyNote, label: 'Remarks', value: d.remarks, wide: true }] : []),
+                ]}
+                actions={[
+                  { label: 'Edit', icon: Edit2, onClick: () => { setDetail(null); startEdit(d); } },
+                  { label: 'Delete', icon: Trash2, tone: 'danger', onClick: () => { setDetail(null); handleDelete(d); } },
+                ]}
+              />
+            );
+          })()}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-slate-500 uppercase font-semibold text-[10px] tracking-wider border-b border-slate-100">
                 <tr>
@@ -624,13 +750,14 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
       {/* Add / Edit Expense Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4 my-8">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-lg w-full p-4 sm:p-6 shadow-xl border border-slate-200 space-y-4 my-0 sm:my-8 max-h-[92dvh] sm:max-h-none overflow-y-auto rounded-b-none sm:rounded-b-xl">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900">
                 {editingExpense ? 'Edit Categorized Mess Expense' : 'Add Categorized Mess Expense'}
@@ -640,7 +767,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                   setIsModalOpen(false);
                   resetForm();
                 }}
-                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 cursor-pointer w-10 h-10 -mr-2 flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -654,7 +781,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                   <select
                     value={form.category}
                     onChange={e => setForm({ ...form, category: e.target.value })}
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                    className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
                     required
                   >
                     {CATEGORIES.map(c => (
@@ -673,13 +800,13 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                     placeholder="e.g. Tomatoes, LPG Cylinder, Milk"
                     value={form.itemName}
                     onChange={e => setForm({ ...form, itemName: e.target.value })}
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Quantity, Unit, Rate */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-2">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Quantity</label>
                   <input
@@ -702,7 +829,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                       }
                     }}
                     placeholder="0"
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
 
@@ -712,7 +839,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                     <select
                       value={form.unit || 'kg'}
                       onChange={(e) => handleUnitChange(e.target.value)}
-                      className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                      className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
                       required
                     >
                       {PREDEFINED_UNITS.map(unit => (
@@ -731,7 +858,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                         onChange={(e) => setCustomUnit(e.target.value)}
                         onBlur={handleCustomUnitBlur}
                         onKeyPress={handleCustomUnitKeyPress}
-                        className="flex-1 p-2 border border-blue-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-blue-50 text-xs"
+                        className="flex-1 min-w-0 p-2.5 sm:p-2 border border-blue-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-blue-50 text-xs"
                         autoFocus
                       />
                       <button
@@ -742,7 +869,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                             setShowCustomUnitInput(false);
                           }
                         }}
-                        className="px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg cursor-pointer"
+                        className="px-3 sm:px-2 py-2 sm:py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg cursor-pointer"
                       >
                         Add
                       </button>
@@ -773,7 +900,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                       }
                     }}
                     placeholder="0"
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -793,7 +920,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, paymentStatus: 'PAID' })}
-                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border cursor-pointer ${
+                    className={`py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border cursor-pointer ${
                       form.paymentStatus === 'PAID'
                         ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -805,7 +932,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, paymentStatus: 'UNPAID' })}
-                    className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border cursor-pointer ${
+                    className={`py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border cursor-pointer ${
                       form.paymentStatus === 'UNPAID'
                         ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
@@ -827,7 +954,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                     placeholder="e.g. INV-2024-88, REC-102, CHQ-4521"
                     value={form.invoiceNumber}
                     onChange={e => setForm({ ...form, invoiceNumber: e.target.value })}
-                    className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-xs"
+                    className="w-full pl-9 pr-3 py-2.5 sm:py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-base sm:text-xs"
                   />
                 </div>
               </div>
@@ -841,7 +968,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                     placeholder="e.g. Local Mandi, Amul Dairy"
                     value={form.vendorName}
                     onChange={e => setForm({ ...form, vendorName: e.target.value })}
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
 
@@ -851,7 +978,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                     type="date"
                     value={form.expenseDate}
                     onChange={e => setForm({ ...form, expenseDate: e.target.value })}
-                    className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -862,7 +989,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                 <select
                   value={form.paymentMethod}
                   onChange={e => setForm({ ...form, paymentMethod: e.target.value })}
-                  className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                  className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
                 >
                   <option value="CASH">CASH</option>
                   <option value="UPI">UPI / GooglePay / PhonePe</option>
@@ -879,25 +1006,25 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
                   placeholder="Any additional notes..."
                   value={form.remarks}
                   onChange={e => setForm({ ...form, remarks: e.target.value })}
-                  className="w-full p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full p-2.5 sm:p-2 text-base sm:text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
               {/* Form Buttons */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2 sticky bottom-0 bg-white pb-[env(safe-area-inset-bottom)]">
                 <button
                   type="button"
                   onClick={() => {
                     setIsModalOpen(false);
                     resetForm();
                   }}
-                  className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 cursor-pointer"
+                  className="px-4 py-2.5 min-h-[44px] sm:min-h-0 sm:py-2 flex-1 sm:flex-none border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm flex items-center space-x-1.5 cursor-pointer"
+                  className="px-4 py-2.5 min-h-[44px] sm:min-h-0 sm:py-2 flex-1 sm:flex-none justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium shadow-sm flex items-center space-x-1.5 cursor-pointer"
                 >
                   <span>{editingExpense ? 'Update Expense' : 'Save Expense'}</span>
                 </button>

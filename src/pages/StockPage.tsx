@@ -15,10 +15,22 @@ import {
   Calendar,
   CalendarClock,
   Filter,
+  SlidersHorizontal,
   ChevronDown,
   Bell,
-  CheckCircle
+  CheckCircle,
+  Package,
+  Tag,
+  Store,
+  Phone,
+  StickyNote,
+  ChevronRight,
+  Hash,
+  Wallet,
+  User,
+  Boxes as BoxesIcon,
 } from 'lucide-react';
+import { Fact, DetailSheet } from '../components/DetailSheet';
 import api from '../api';
 import type { StockItem, StockCategory, StockTransaction } from '../types';
 
@@ -136,6 +148,8 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
   const [txDateTo, setTxDateTo] = useState<string>('');
   const [txTypeFilter, setTxTypeFilter] = useState<string>('ALL');
   const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [detailItemKey, setDetailItemKey] = useState<string | null>(null);
+  const [detailTxKey, setDetailTxKey] = useState<string | null>(null);
 
   // Modals
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
@@ -431,6 +445,49 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
     </td>
   );
 
+  const itemKey = (item: StockItem) => String(item.id || item.itemName);
+
+  const renderItemCard = (item: StockItem, _labels: { add: string; use: string }, _tint = '') => {
+    const isLow = item.currentStock <= item.minimumStockLevel;
+    const expiryInfo = getExpiryInfo(item.expiryDate);
+    const expiryBad = expiryInfo.state === 'EXPIRED';
+    const expirySoon = expiryInfo.state === 'SOON';
+    const dot = isLow || expiryBad ? 'bg-rose-500' : expirySoon ? 'bg-amber-500' : 'bg-emerald-500';
+    return (
+      <button
+        type="button"
+        key={itemKey(item)}
+        onClick={() => setDetailItemKey(itemKey(item))}
+        className="w-full text-left px-3 py-2.5 flex items-center gap-2 active:bg-slate-50"
+      >
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+            <span className="text-[15px] font-semibold text-slate-900 truncate">{item.itemName}</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {(isLow || expiryBad || expirySoon) && (
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${isLow || expiryBad ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                {expiryBad ? 'Expired' : isLow ? 'Low' : 'Expiring'}
+              </span>
+            )}
+            {item.category && <Fact icon={Tag} label="Category">{item.category}</Fact>}
+            <Fact icon={IndianRupee} label="Rate">{item.unitPrice || 0}/{item.unit || 'kg'}</Fact>
+            {expiryInfo.state !== 'NONE' && (
+              <Fact icon={CalendarClock} label="Expiry" tone={expiryBad ? 'bad' : expirySoon ? 'warn' : 'default'}>
+                {formatExpiryDate(item.expiryDate)}
+              </Fact>
+            )}
+          </div>
+        </div>
+        <div className={`shrink-0 text-base font-bold tabular-nums ${isLow ? 'text-rose-600' : 'text-slate-900'}`}>
+          {item.currentStock} {item.unit}
+        </div>
+        <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" aria-hidden="true" />
+      </button>
+    );
+  };
+
   const tabButton = (
     tab: typeof activeTab,
     activeClass: string,
@@ -438,7 +495,7 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
   ) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeTab === tab ? activeClass : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+      className={`flex items-center gap-1.5 sm:gap-2 shrink-0 whitespace-nowrap h-8 sm:h-auto sm:min-h-[40px] px-3 sm:px-4 sm:py-2.5 rounded-full sm:rounded-lg text-xs sm:text-sm font-semibold transition-all ${activeTab === tab ? activeClass : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
         }`}
     >
       {content}
@@ -451,71 +508,71 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
     ) : null;
 
   return (
-    <div className="space-y-6 text-base">
+    <div className="space-y-4 sm:space-y-6 text-base">
       {/* Top Header & Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <div className="text-sm text-slate-500 font-medium">Total Inventory Items</div>
-            <div className="text-3xl font-bold text-slate-900 mt-1">{safeItems.length} Items</div>
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4">
+        <div className="bg-white p-2.5 sm:p-5 rounded-xl border border-slate-200 shadow-xs flex items-start sm:items-center justify-between gap-2 sm:gap-3 min-w-0">
+          <div className="min-w-0">
+            <div className="text-[11px] sm:text-sm text-slate-500 font-semibold sm:font-medium truncate">Total Inventory Items</div>
+            <div className="text-lg sm:text-3xl leading-tight font-bold text-slate-900 mt-0.5 sm:mt-1">{safeItems.length} Items</div>
           </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-            <Boxes className="w-6 h-6" />
+          <div className="p-0 sm:p-3 bg-blue-50 text-blue-600 rounded-lg">
+            <Boxes className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <div className="text-sm text-slate-500 font-medium">Est. Total Pantry Value</div>
-            <div className="text-3xl font-bold text-slate-900 mt-1">₹{totalValue.toLocaleString()}</div>
+        <div className="bg-white p-2.5 sm:p-5 rounded-xl border border-slate-200 shadow-xs flex items-start sm:items-center justify-between gap-2 sm:gap-3 min-w-0">
+          <div className="min-w-0">
+            <div className="text-[11px] sm:text-sm text-slate-500 font-semibold sm:font-medium truncate">Est. Total Pantry Value</div>
+            <div className="text-lg sm:text-3xl leading-tight font-bold text-slate-900 mt-0.5 sm:mt-1">₹{totalValue.toLocaleString()}</div>
           </div>
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-            <IndianRupee className="w-6 h-6" />
+          <div className="p-0 sm:p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+            <IndianRupee className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
           </div>
         </div>
 
         <button
           onClick={() => setActiveTab('LOW_STOCK')}
-          className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between text-left hover:border-rose-300 transition-colors"
+          className="bg-white p-2.5 sm:p-5 rounded-xl border border-slate-200 shadow-xs flex items-start sm:items-center justify-between gap-2 sm:gap-3 min-w-0 text-left hover:border-rose-300 transition-colors"
         >
-          <div>
-            <div className="text-sm text-slate-500 font-medium">Low Stock Alerts</div>
-            <div className={`text-3xl font-bold mt-1 ${lowStockCount > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
+          <div className="min-w-0">
+            <div className="text-[11px] sm:text-sm text-slate-500 font-semibold sm:font-medium truncate">Low Stock Alerts</div>
+            <div className={`text-lg sm:text-3xl leading-tight font-bold mt-0.5 sm:mt-1 ${lowStockCount > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
               {lowStockCount} Alert{lowStockCount === 1 ? '' : 's'}
             </div>
           </div>
-          <div className={`p-3 rounded-lg ${lowStockCount > 0 ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-400'}`}>
-            <AlertTriangle className="w-6 h-6" />
+          <div className={`p-0 sm:p-3 rounded-lg ${lowStockCount > 0 ? 'bg-rose-50 text-rose-600' : 'bg-slate-50 text-slate-400'}`}>
+            <AlertTriangle className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
           </div>
         </button>
 
         <button
           onClick={() => setActiveTab('EXPIRY')}
-          className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between text-left hover:border-orange-300 transition-colors"
+          className="bg-white p-2.5 sm:p-5 rounded-xl border border-slate-200 shadow-xs flex items-start sm:items-center justify-between gap-2 sm:gap-3 min-w-0 text-left hover:border-orange-300 transition-colors"
         >
-          <div>
-            <div className="text-sm text-slate-500 font-medium">Expiry Alerts</div>
-            <div className={`text-3xl font-bold mt-1 ${expiryAlertCount > 0 ? 'text-orange-600' : 'text-slate-900'}`}>
+          <div className="min-w-0">
+            <div className="text-[11px] sm:text-sm text-slate-500 font-semibold sm:font-medium truncate">Expiry Alerts</div>
+            <div className={`text-lg sm:text-3xl leading-tight font-bold mt-0.5 sm:mt-1 ${expiryAlertCount > 0 ? 'text-orange-600' : 'text-slate-900'}`}>
               {expiryAlertCount} Alert{expiryAlertCount === 1 ? '' : 's'}
             </div>
             {expiryAlertCount > 0 && (
-              <div className="text-sm text-slate-500 mt-0.5">
+              <div className="hidden sm:block text-sm text-slate-500 mt-0.5">
                 {expiredCount} expired · {expiringSoonCount} expiring soon
               </div>
             )}
           </div>
-          <div className={`p-3 rounded-lg ${expiryAlertCount > 0 ? 'bg-orange-50 text-orange-600' : 'bg-slate-50 text-slate-400'}`}>
-            <CalendarClock className="w-6 h-6" />
+          <div className={`p-0 sm:p-3 rounded-lg ${expiryAlertCount > 0 ? 'bg-orange-50 text-orange-600' : 'bg-slate-50 text-slate-400'}`}>
+            <CalendarClock className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
           </div>
         </button>
       </div>
 
       {/* Expiry banner */}
       {expiryAlertCount > 0 && activeTab !== 'EXPIRY' && (
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-orange-50 border border-orange-200 text-orange-900 rounded-xl px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-orange-50 border border-orange-200 text-orange-900 rounded-xl px-4 sm:px-5 py-3 sm:py-4">
           <div className="flex items-center gap-3">
             <CalendarClock className="w-6 h-6 shrink-0" />
-            <span className="text-base font-semibold">
+            <span className="text-sm sm:text-base font-semibold">
               {expiredCount > 0 && `${expiredCount} item${expiredCount === 1 ? ' has' : 's have'} expired`}
               {expiredCount > 0 && expiringSoonCount > 0 && ' and '}
               {expiringSoonCount > 0 &&
@@ -525,7 +582,7 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
           </div>
           <button
             onClick={() => setActiveTab('EXPIRY')}
-            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-bold"
+            className="w-full sm:w-auto min-h-[40px] px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-bold"
           >
             View Expiry Alerts
           </button>
@@ -533,8 +590,8 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
       )}
 
       {/* Tabs & Actions Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
-        <div className="flex items-center flex-wrap gap-2">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 sm:gap-4 bg-white p-2.5 sm:p-4 rounded-xl border border-slate-200 shadow-xs">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:pb-0 lg:flex-wrap lg:overflow-visible">
           {tabButton('ITEMS', 'bg-slate-900 text-white shadow-xs', <>Pantry Inventory ({safeItems.length})</>)}
           {tabButton(
             'LOW_STOCK',
@@ -570,7 +627,7 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
             setEditingItem(null);
             setIsItemModalOpen(true);
           }}
-          className="inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-5 py-2.5 rounded-lg text-sm shadow-xs transition-colors shrink-0"
+          className="inline-flex w-full lg:w-auto items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-5 h-10 sm:min-h-[44px] sm:h-auto sm:py-2.5 rounded-lg text-sm shadow-xs transition-colors shrink-0"
         >
           <Plus className="w-5 h-5" />
           <span>Add New Stock Item</span>
@@ -586,7 +643,7 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
             placeholder="Search stock items by name or category..."
             value={localSearchTerm}
             onChange={(e) => setLocalSearchTerm(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-xl text-base focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+            className="w-full pl-11 pr-4 h-10 sm:h-auto py-0 sm:py-3 border border-slate-300 rounded-xl text-base focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
           />
         </div>
       )}
@@ -594,7 +651,7 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
       {activeTab === 'LOW_STOCK' ? (
         /* Low Stock Alerts Tab */
         filteredLowStock.length === 0 ? (
-          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+          <div className="bg-white rounded-xl border border-slate-200 p-8 sm:p-12 text-center">
             <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-8 h-8 text-emerald-500" />
             </div>
@@ -603,7 +660,10 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
           </div>
         ) : (
           <div className="bg-white border border-rose-200 rounded-xl overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
+            <div className="md:hidden divide-y divide-slate-100">
+              {filteredLowStock.map(item => renderItemCard(item, { add: '+ Restock Now', use: '- Use' }))}
+            </div>
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse text-base">
                 <thead>
                   <tr className="bg-rose-50 border-b border-rose-200 text-rose-700 font-semibold uppercase tracking-wider">
@@ -642,7 +702,7 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
       ) : activeTab === 'EXPIRY' ? (
         /* Expiry Alerts Tab */
         filteredExpiryAlerts.length === 0 ? (
-          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+          <div className="bg-white rounded-xl border border-slate-200 p-8 sm:p-12 text-center">
             <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-8 h-8 text-emerald-500" />
             </div>
@@ -653,7 +713,12 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
           </div>
         ) : (
           <div className="bg-white border border-orange-200 rounded-xl overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
+            <div className="md:hidden divide-y divide-slate-100">
+              {filteredExpiryAlerts.map(({ item, info }) =>
+                renderItemCard(item, { add: '+ Add', use: '- Use' }, info.state === 'EXPIRED' ? 'bg-rose-50/60' : 'bg-orange-50/40')
+              )}
+            </div>
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse text-base">
                 <thead>
                   <tr className="bg-orange-50 border-b border-orange-200 text-orange-800 font-semibold uppercase tracking-wider">
@@ -696,11 +761,69 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
         /* Transactions Audit Tab with Filters */
         <div className="space-y-4">
           {/* Transaction Filters */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
-            <div className="flex items-center justify-between">
+          <div className="md:hidden space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search item..."
+                  value={txSearchTerm}
+                  onChange={(e) => setTxSearchTerm(e.target.value)}
+                  className="w-full h-10 pl-9 pr-3 border border-slate-300 rounded-xl text-base bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFilters(!showFilters)}
+                aria-label="Toggle filters"
+                className="relative shrink-0 h-10 px-3 inline-flex items-center gap-1.5 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-700"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                Filters
+                {[txDateFrom, txDateTo, txTypeFilter !== 'ALL'].filter(Boolean).length > 0 && (
+                  <span className="min-w-4 h-4 px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold inline-flex items-center justify-center">
+                    {[txDateFrom, txDateTo, txTypeFilter !== 'ALL'].filter(Boolean).length}
+                  </span>
+                )}
+              </button>
+            </div>
+            {showFilters && (
+              <div className="grid grid-cols-2 gap-2 bg-white border border-slate-200 rounded-xl p-2.5">
+                <label className="min-w-0">
+                  <span className="block text-[11px] font-semibold text-slate-500 mb-0.5">From</span>
+                  <input type="date" value={txDateFrom} onChange={(e) => setTxDateFrom(e.target.value)} className="w-full h-10 px-2 border border-slate-300 rounded-lg text-sm bg-white" />
+                </label>
+                <label className="min-w-0">
+                  <span className="block text-[11px] font-semibold text-slate-500 mb-0.5">To</span>
+                  <input type="date" value={txDateTo} onChange={(e) => setTxDateTo(e.target.value)} className="w-full h-10 px-2 border border-slate-300 rounded-lg text-sm bg-white" />
+                </label>
+                <label className="col-span-2 min-w-0">
+                  <span className="block text-[11px] font-semibold text-slate-500 mb-0.5">Type</span>
+                  <select value={txTypeFilter} onChange={(e) => setTxTypeFilter(e.target.value)} className="w-full h-10 px-2 border border-slate-300 rounded-lg text-sm bg-white">
+                    <option value="ALL">All Types</option>
+                    <option value="PURCHASE">Purchase</option>
+                    <option value="USAGE">Usage</option>
+                    <option value="RETURN">Return</option>
+                    <option value="ADJUSTMENT">Adjustment</option>
+                  </select>
+                </label>
+                {(txSearchTerm || txDateFrom || txDateTo || txTypeFilter !== 'ALL') && (
+                  <button type="button" onClick={clearTxFilters} className="col-span-2 h-9 text-sm font-medium text-blue-600">
+                    Clear all
+                  </button>
+                )}
+              </div>
+            )}
+            <div className="text-xs text-slate-500 px-0.5">
+              {filteredTransactions.length} {filteredTransactions.length === 1 ? 'entry' : 'entries'}
+            </div>
+          </div>
+          <div className="hidden md:block bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs">
+            <div className="flex items-center justify-between gap-2">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 text-base font-semibold text-slate-700 hover:text-slate-900"
+                className="flex items-center gap-2 min-h-[40px] text-base font-semibold text-slate-700 hover:text-slate-900"
               >
                 <Filter className="w-5 h-5" />
                 Filters
@@ -709,7 +832,7 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
               {(txSearchTerm || txDateFrom || txDateTo || txTypeFilter !== 'ALL') && (
                 <button
                   onClick={clearTxFilters}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  className="min-h-[40px] text-sm text-blue-600 hover:text-blue-800 font-medium"
                 >
                   Clear All Filters
                 </button>
@@ -778,7 +901,54 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
 
           {/* Transactions Table */}
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
+            <div className="md:hidden divide-y divide-slate-100">
+              {filteredTransactions.length === 0 ? (
+                <div className="py-10 px-4 text-center text-slate-400 text-base font-semibold">
+                  {transactions.length === 0 ? 'No transactions recorded yet.' : 'No transactions match your filters.'}
+                </div>
+              ) : (
+                filteredTransactions.map((tx, index) => {
+                  const t = tx.transactionType as string;
+                  const isIn = t === 'PURCHASE' || t === 'RETURN';
+                  const isOut = t === 'USAGE' || t === 'CONSUME';
+                  const dot = isIn ? 'bg-emerald-500' : isOut ? 'bg-amber-500' : 'bg-blue-500';
+                  const pill = isIn
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                    : isOut
+                      ? 'bg-amber-50 text-amber-700 border-amber-100'
+                      : 'bg-blue-50 text-blue-700 border-blue-100';
+                  return (
+                    <button
+                      type="button"
+                      key={tx.id || index}
+                      onClick={() => setDetailTxKey(String(tx.id || index))}
+                      className="w-full text-left px-3 py-2.5 flex items-center gap-2 active:bg-slate-50"
+                    >
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+                          <span className="text-[15px] font-semibold text-slate-900 truncate">
+                            {tx.stockItemName || (tx as any).itemName || 'Unknown Item'}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${pill}`}>
+                            {isIn && <TrendingUp className="w-3 h-3" />}
+                            {isOut && <TrendingDown className="w-3 h-3" />}
+                            {tx.transactionType || 'UNKNOWN'}
+                          </span>
+                          {tx.transactionDate && <Fact icon={Calendar} label="Date">{tx.transactionDate}</Fact>}
+                          <Fact icon={Package} label="Quantity">{tx.quantity || 0} {tx.unit || ''}</Fact>
+                        </div>
+                      </div>
+                      <div className="shrink-0 text-base font-bold tabular-nums text-slate-900">₹{(tx.totalAmount || 0).toLocaleString()}</div>
+                      <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" aria-hidden="true" />
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse text-base">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
@@ -853,7 +1023,7 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
             </div>
 
             {filteredTransactions.length > 0 && (
-              <div className="px-4 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-sm">
+              <div className="px-4 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-sm">
                 <span className="text-slate-500">
                   Showing {filteredTransactions.length} of {transactions.length} transactions
                 </span>
@@ -868,10 +1038,10 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
         /* ITEMS TAB - list view only */
         <>
           {/* Category Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden max-w-full">
             <button
               onClick={() => setCategoryFilter('ALL')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold shrink-0 transition-all ${categoryFilter === 'ALL'
+              className={`px-3 sm:px-4 h-8 sm:h-auto sm:py-2 sm:min-h-[40px] rounded-full sm:rounded-lg text-xs sm:text-sm font-semibold shrink-0 transition-all ${categoryFilter === 'ALL'
                 ? 'bg-amber-500 text-slate-950 font-bold'
                 : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                 }`}
@@ -882,7 +1052,7 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
               <button
                 key={cat}
                 onClick={() => setCategoryFilter(cat)}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold shrink-0 transition-all ${categoryFilter === cat
+                className={`px-3 sm:px-4 h-8 sm:h-auto sm:py-2 sm:min-h-[40px] rounded-full sm:rounded-lg text-xs sm:text-sm font-semibold shrink-0 transition-all ${categoryFilter === cat
                   ? 'bg-amber-500 text-slate-950 font-bold'
                   : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                   }`}
@@ -893,7 +1063,23 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
           </div>
 
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
+            <div className="md:hidden divide-y divide-slate-100">
+              {loading && safeItems.length === 0 ? (
+                <div className="py-12 text-center text-slate-400 text-base">Loading inventory...</div>
+              ) : filteredItems.length === 0 ? (
+                <div className="py-12 px-4 text-center text-slate-400">
+                  <Boxes className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+                  <p className="text-base font-semibold">No stock items match your filter criteria.</p>
+                </div>
+              ) : (
+                filteredItems.map(item => {
+                  const expiry = getExpiryInfo(item.expiryDate);
+                  const tint = expiry.state === 'EXPIRED' ? 'bg-rose-50/60' : expiry.state === 'SOON' ? 'bg-orange-50/50' : '';
+                  return renderItemCard(item, { add: '+ Add', use: '- Use' }, tint);
+                })
+              )}
+            </div>
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse text-base">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
@@ -971,18 +1157,18 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
 
       {/* Adjust Stock Modal */}
       {adjustModalItem && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full max-h-[92dvh] overflow-y-auto">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 flex items-center justify-between gap-2 sticky top-0 bg-white z-10">
               <h3 className="font-bold text-slate-900 text-lg">
                 {adjustType === 'ADD' ? 'Add Stock (Procurement)' : 'Deduct Stock (Kitchen Use)'}
               </h3>
-              <button onClick={() => setAdjustModalItem(null)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setAdjustModalItem(null)} className="min-w-[40px] min-h-[40px] flex items-center justify-center shrink-0 text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleAdjustStock} className="p-6 space-y-4">
+            <form onSubmit={handleAdjustStock} className="p-4 sm:p-6 space-y-4">
               <div>
                 <div className="font-bold text-slate-900 text-lg">{adjustModalItem.itemName}</div>
                 <div className="text-sm text-slate-500 mt-0.5">
@@ -1016,17 +1202,17 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
                 />
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+              <div className="pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setAdjustModalItem(null)}
-                  className="px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium text-base"
+                  className="min-h-[44px] px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium text-base"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className={`px-5 py-2.5 font-bold rounded-lg text-white text-base shadow-xs transition-colors ${adjustType === 'ADD' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-600 hover:bg-amber-700'
+                  className={`min-h-[44px] px-5 py-2.5 font-bold rounded-lg text-white text-base shadow-xs transition-colors ${adjustType === 'ADD' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-600 hover:bg-amber-700'
                     }`}
                 >
                   Confirm {adjustType === 'ADD' ? 'Addition' : 'Deduction'}
@@ -1039,18 +1225,18 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
 
       {/* Add / Edit Item Modal */}
       {isItemModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-xl w-full max-h-[92vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-xl w-full max-h-[92dvh] overflow-y-auto">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 flex items-center justify-between gap-2 sticky top-0 bg-white z-10">
               <h3 className="font-bold text-slate-900 text-lg">
                 {editingItem ? 'Edit Pantry Item' : 'Add New Pantry Item'}
               </h3>
-              <button onClick={closeItemModal} className="text-slate-400 hover:text-slate-600">
+              <button onClick={closeItemModal} className="min-w-[40px] min-h-[40px] flex items-center justify-center shrink-0 text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveItem} className="p-6 space-y-4">
+            <form onSubmit={handleSaveItem} className="p-4 sm:p-6 space-y-4">
               <div>
                 <label className={labelClass}>Item Name *</label>
                 <input
@@ -1116,7 +1302,7 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
                           setShowCustomUnitInput(false);
                           setCustomUnit('');
                         }}
-                        className="px-3 py-2.5 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 text-sm"
+                        className="px-3 min-h-[44px] border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 text-sm"
                       >
                         Cancel
                       </button>
@@ -1186,17 +1372,17 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
                 </p>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+              <div className="pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2">
                 <button
                   type="button"
                   onClick={closeItemModal}
-                  className="px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium text-base"
+                  className="min-h-[44px] px-4 py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium text-base"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg shadow-xs text-base"
+                  className="min-h-[44px] px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg shadow-xs text-base"
                 >
                   Save Item
                 </button>
@@ -1205,6 +1391,75 @@ export const StockPage: React.FC<StockPageProps> = ({ searchTerm: globalSearchTe
           </div>
         </div>
       )}
+      {/* Phone detail sheets */}
+      {(() => {
+        const it = detailItemKey ? safeItems.find(i => i && itemKey(i) === detailItemKey) : null;
+        if (!it) return null;
+        const exp = getExpiryInfo(it.expiryDate);
+        const low = it.currentStock <= it.minimumStockLevel;
+        const closeThen = (fn: () => void) => () => { setDetailItemKey(null); fn(); };
+        return (
+          <DetailSheet
+            open
+            onClose={() => setDetailItemKey(null)}
+            title={it.itemName}
+            subtitle={it.category}
+            badges={renderStatusCell(it)}
+            headline={<span className={low ? 'text-rose-600' : ''}>{it.currentStock} {it.unit}</span>}
+            fields={[
+              { icon: Tag, label: 'Category', value: it.category || '-' },
+              ...(it.subCategory ? [{ icon: Tag, label: 'Sub-category', value: it.subCategory }] : []),
+              { icon: Package, label: 'In stock', value: `${it.currentStock} ${it.unit}`, tone: low ? 'bad' as const : 'default' as const },
+              { icon: AlertTriangle, label: 'Minimum', value: `${it.minimumStockLevel} ${it.unit}` },
+              ...(it.maximumStockLevel ? [{ icon: BoxesIcon, label: 'Maximum', value: `${it.maximumStockLevel} ${it.unit}` }] : []),
+              { icon: IndianRupee, label: 'Unit price', value: `₹${it.unitPrice || 0}/${it.unit || 'kg'}` },
+              { icon: Wallet, label: 'Value', value: `₹${((it.currentStock || 0) * (it.unitPrice || 0)).toLocaleString()}` },
+              ...(exp.state !== 'NONE'
+                ? [{ icon: CalendarClock, label: 'Expiry', value: `${formatExpiryDate(it.expiryDate)} (${describeExpiry(exp)})`, tone: exp.state === 'EXPIRED' ? 'bad' as const : exp.state === 'SOON' ? 'warn' as const : 'default' as const, wide: true }]
+                : []),
+              ...(it.supplierName ? [{ icon: Store, label: 'Supplier', value: it.supplierName }] : []),
+              ...(it.supplierContact ? [{ icon: Phone, label: 'Supplier contact', value: it.supplierContact }] : []),
+              ...(it.description ? [{ icon: StickyNote, label: 'Description', value: it.description, wide: true }] : []),
+            ]}
+            actions={[
+              { label: low ? 'Restock' : 'Add stock', icon: Plus, tone: 'primary', onClick: closeThen(() => openAdjustModal(it, 'ADD')) },
+              { label: 'Use', icon: TrendingDown, onClick: closeThen(() => openAdjustModal(it, 'DEDUCT')) },
+              { label: 'Edit', icon: Edit2, onClick: closeThen(() => openEditModal(it)) },
+              { label: 'Delete', icon: Trash2, tone: 'danger', onClick: closeThen(() => handleDeleteItem(it)) },
+            ]}
+          />
+        );
+      })()}
+      {(() => {
+        const tx = detailTxKey ? filteredTransactions.find((x, i) => String(x.id || i) === detailTxKey) : null;
+        if (!tx) return null;
+        return (
+          <DetailSheet
+            open
+            onClose={() => setDetailTxKey(null)}
+            title={tx.stockItemName || (tx as any).itemName || 'Unknown Item'}
+            subtitle={tx.transactionDate}
+            badges={
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-slate-50 text-slate-700 border-slate-200">
+                {tx.transactionType || 'UNKNOWN'}
+              </span>
+            }
+            headline={`₹${(tx.totalAmount || 0).toLocaleString()}`}
+            fields={[
+              { icon: Calendar, label: 'Date', value: tx.transactionDate || '-' },
+              { icon: Package, label: 'Quantity', value: `${tx.quantity || 0} ${tx.unit || ''}` },
+              ...(tx.unitPrice ? [{ icon: IndianRupee, label: 'Unit price', value: `₹${tx.unitPrice}` }] : []),
+              { icon: Wallet, label: 'Total', value: `₹${(tx.totalAmount || 0).toLocaleString()}` },
+              { icon: TrendingDown, label: 'Stock before', value: `${tx.stockBefore ?? '-'}` },
+              { icon: TrendingUp, label: 'Stock after', value: `${tx.stockAfter ?? '-'}` },
+              ...(tx.referenceNumber ? [{ icon: Hash, label: 'Reference', value: tx.referenceNumber }] : []),
+              ...(tx.referenceType ? [{ icon: Tag, label: 'Reference type', value: tx.referenceType }] : []),
+              ...(tx.enteredBy ? [{ icon: User, label: 'Entered by', value: tx.enteredBy }] : []),
+              ...(tx.remarks ? [{ icon: StickyNote, label: 'Remarks', value: tx.remarks, wide: true }] : []),
+            ]}
+          />
+        );
+      })()}
     </div>
   );
 };

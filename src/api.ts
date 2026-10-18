@@ -1,4 +1,5 @@
 // src/api.ts - Complete API Client for Mess Management System
+import { isDemoMode } from './demo/demoMode';
 import type {
   Candidate,
   Attendance,
@@ -56,18 +57,20 @@ export class MessManagementAPI {
     if (typeof window !== 'undefined') {
       this.accessToken = localStorage.getItem('accessToken');
       this.refreshToken = localStorage.getItem('refreshToken');
+      if (this.accessToken) this.loadPersistedCache();
     }
   }
 
   // ==================== TOKEN MANAGEMENT ====================
-  setTokens(accessToken: string, refreshToken: string) {
+  /** `keepCache` = true when the same user's session is only being restored / its token refreshed. */
+  setTokens(accessToken: string, refreshToken: string, keepCache: boolean = false) {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
     if (typeof window !== 'undefined') {
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
     }
-    this.clearCache(); // never serve one user's cached reads to the next
+    if (!keepCache) this.clearCache(); // never serve one user's cached reads to the next
   }
 
   clearTokens() {
@@ -93,22 +96,59 @@ export class MessManagementAPI {
     }
   }
 
-  // ==================== IN-MEMORY GET CACHE ====================
-  // Every read (GET) goes through here. A page re-opening / re-mounting gets
-  // served from memory instead of re-hitting the backend; any write (POST/PUT/
-  // PATCH/DELETE) invalidates the whole cache so the very next read after a
-  // create/update/delete always comes back fresh from the server.
+  // ==================== PERSISTENT GET CACHE ====================
+  // Every read (GET) goes through here. Responses are kept in memory AND saved to localStorage,
+  // so re-opening the app (or a page) shows the saved data instantly with no network call.
+  // Data is only re-fetched when the user taps Refresh, after any write (POST/PUT/PATCH/DELETE
+  // clears the whole cache so the next read is fresh), or on login/logout. If the network is down,
+  // the last saved copy is served instead of an error.
   private cache = new Map<string, { data: unknown; expiry: number }>();
   private inflightGets = new Map<string, Promise<unknown>>();
-  // Long on purpose: pages are served from memory while you move around, and every write
-  // (and every manual refresh button) clears the cache anyway. The TTL is only a safety net
-  // for data changed from outside this tab.
-  private static readonly CACHE_TTL_MS = 30 * 60 * 1000;
+  private persistTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly CACHE_STORAGE_KEY = 'platemate-api-cache-v1';
+  // Effectively "as long as the app is installed"; the cache is cleared by writes, refresh and logout.
+  private static readonly CACHE_TTL_MS = 365 * 24 * 60 * 60 * 1000;
+  private static readonly MAX_PERSISTED_CHARS = 4_000_000; // stay under the ~5MB localStorage quota
 
-  /** Drops all cached GET responses. Called automatically after every successful mutation. */
+  private loadPersistedCache() {
+    try {
+      const raw = localStorage.getItem(MessManagementAPI.CACHE_STORAGE_KEY);
+      if (!raw) return;
+      const entries = JSON.parse(raw) as Record<string, { data: unknown; expiry: number }>;
+      const now = Date.now();
+      Object.entries(entries).forEach(([endpoint, entry]) => {
+        if (entry && entry.expiry > now) this.cache.set(endpoint, entry);
+      });
+    } catch {
+      /* unreadable cache: start empty */
+    }
+  }
+
+  private schedulePersist() {
+    if (typeof window === 'undefined' || isDemoMode()) return;
+    if (this.persistTimer) clearTimeout(this.persistTimer);
+    this.persistTimer = setTimeout(() => {
+      try {
+        const json = JSON.stringify(Object.fromEntries(this.cache));
+        if (json.length <= MessManagementAPI.MAX_PERSISTED_CHARS) {
+          localStorage.setItem(MessManagementAPI.CACHE_STORAGE_KEY, json);
+        }
+      } catch {
+        /* quota exceeded / storage unavailable: memory cache still works */
+      }
+    }, 400);
+  }
+
+  /** Drops all cached GET responses (memory + saved copy). Called after every successful mutation and by Refresh. */
   clearCache() {
     this.cache.clear();
     this.inflightGets.clear();
+    if (this.persistTimer) clearTimeout(this.persistTimer);
+    try {
+      if (typeof window !== 'undefined') localStorage.removeItem(MessManagementAPI.CACHE_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
   }
 
   // ==================== PUBLIC REQUEST METHOD (cached) ====================
@@ -138,6 +178,7 @@ export class MessManagementAPI {
     const promise = this.requestRaw<T>(endpoint, options, retryCount)
       .then((data) => {
         this.cache.set(endpoint, { data, expiry: Date.now() + MessManagementAPI.CACHE_TTL_MS });
+        this.schedulePersist();
         this.inflightGets.delete(endpoint);
         return data;
       })
@@ -156,6 +197,12 @@ export class MessManagementAPI {
     options: RequestInit = {},
     retryCount: number = 0
   ): Promise<T> {
+    // Demo mode: answer from the in-memory mock backend, never touch the network
+    if (isDemoMode()) {
+      const { handleDemoRequest } = await import('./demo/mockBackend');
+      return (await handleDemoRequest((options.method || 'GET').toUpperCase(), endpoint, options.body)) as T;
+    }
+
     const isFormData = options.body instanceof FormData;
     const headers: Record<string, string> = {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
@@ -257,7 +304,7 @@ export class MessManagementAPI {
       const json = await response.json();
       if (json.success && json.data) {
         const { token, refreshToken } = json.data;
-        this.setTokens(token, refreshToken);
+        this.setTokens(token, refreshToken, true);
         return true;
       }
       return false;

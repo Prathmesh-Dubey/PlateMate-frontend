@@ -15,7 +15,7 @@ interface ToastProps {
 
 export const ToastContainer: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 max-w-sm pointer-events-none">
+    <div className="fixed left-3 right-3 sm:left-auto sm:right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] lg:bottom-5 z-50 flex flex-col space-y-2 sm:max-w-sm pointer-events-none">
       {toasts.map(toast => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
       ))}
@@ -40,14 +40,14 @@ const ToastItem: React.FC<{ toast: ToastMessage; onDismiss: (id: string) => void
   const Icon = config.icon;
 
   return (
-    <div className={`pointer-events-auto flex items-center justify-between px-4 py-3 rounded-lg shadow-lg ${config.bg} text-xs font-medium space-x-3 transition-all transform translate-y-0`}>
-      <div className="flex items-center space-x-2">
+    <div className={`pointer-events-auto flex items-center justify-between px-4 py-3 min-h-[44px] rounded-lg shadow-lg ${config.bg} text-xs font-medium space-x-3 transition-all transform translate-y-0`}>
+      <div className="flex items-center space-x-2 min-w-0">
         <Icon className="w-4 h-4 shrink-0" />
-        <span>{toast.text}</span>
+        <span className="break-words min-w-0">{toast.text}</span>
       </div>
       <button
         onClick={() => onDismiss(toast.id)}
-        className="text-white/80 hover:text-white shrink-0 p-0.5"
+        className="text-white/80 hover:text-white shrink-0 p-2 -m-2"
       >
         <X className="w-3.5 h-3.5" />
       </button>

@@ -1,22 +1,28 @@
 // src/pages/LoginPage.tsx
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, Loader2, Play } from 'lucide-react';
 import api from '../api';
 import { SignUpPage } from './SignUpPage';
+import { DownloadAppLink } from '../components/DownloadAppLink';
+import { useBackClose } from '../hooks/backNavigation';
 
 interface LoginPageProps {
   onLoginSuccess: (token: string, refreshToken: string, user: any) => void;
   showToast: (type: 'success' | 'error' | 'info', text: string) => void;
+  /** Starts the visitor demo (sample data, nothing saved) */
+  onStartDemo?: () => void;
 }
 
-export function LoginPage({ onLoginSuccess, showToast }: LoginPageProps) {
+export function LoginPage({ onLoginSuccess, showToast, onStartDemo }: LoginPageProps) {
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  useBackClose(showForgotPassword, () => setShowForgotPassword(false));
   const [showSignUp, setShowSignUp] = useState(false);
+  useBackClose(showSignUp, () => setShowSignUp(false));
   const [resetEmail, setResetEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -166,7 +172,7 @@ export function LoginPage({ onLoginSuccess, showToast }: LoginPageProps) {
                     type="email"
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     placeholder="Enter your email"
                     required
                   />
@@ -210,7 +216,7 @@ export function LoginPage({ onLoginSuccess, showToast }: LoginPageProps) {
                   type="text"
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   placeholder="Enter 6-digit OTP"
                   required
                   maxLength={6}
@@ -227,11 +233,19 @@ export function LoginPage({ onLoginSuccess, showToast }: LoginPageProps) {
                     type={showPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     placeholder="Enter new password (min 6 characters)"
                     required
                     minLength={6}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 p-3 text-gray-400 hover:text-gray-600"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -245,11 +259,19 @@ export function LoginPage({ onLoginSuccess, showToast }: LoginPageProps) {
                     type={showPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     placeholder="Confirm new password"
                     required
                     minLength={6}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-0 top-1/2 transform -translate-y-1/2 p-3 text-gray-400 hover:text-gray-600"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -287,10 +309,10 @@ export function LoginPage({ onLoginSuccess, showToast }: LoginPageProps) {
 
   // Login Form
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-blue-50 to-indigo-100 p-4" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-5 sm:p-8">
         {/* Logo/Brand */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <img src="/logo.png" alt="PlateMate logo" className="w-16 h-16 rounded-2xl mx-auto mb-4 object-contain shadow-sm" />
           <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
           <p className="text-gray-600 mt-2">Sign in to your account</p>
@@ -314,7 +336,7 @@ export function LoginPage({ onLoginSuccess, showToast }: LoginPageProps) {
                 type="text"
                 value={emailOrPhone}
                 onChange={(e) => setEmailOrPhone(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="Enter email or phone"
                 required
               />
@@ -331,7 +353,7 @@ export function LoginPage({ onLoginSuccess, showToast }: LoginPageProps) {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 placeholder="Enter your password"
                 required
               />
@@ -375,6 +397,26 @@ export function LoginPage({ onLoginSuccess, showToast }: LoginPageProps) {
           </button>
         </form>
 
+        {onStartDemo && (
+          <div className="mt-5">
+            <div className="relative my-4 text-center">
+              <div className="absolute inset-x-0 top-1/2 border-t border-gray-200" />
+              <span className="relative bg-white px-3 text-xs text-gray-400">or</span>
+            </div>
+            <button
+              type="button"
+              onClick={onStartDemo}
+              className="w-full min-h-11 py-2.5 px-4 bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <Play className="w-4 h-4" />
+              Explore Demo
+            </button>
+            <p className="mt-2 text-center text-xs text-gray-500">
+              Try every screen with sample data. Nothing is saved or connected to our database.
+            </p>
+          </div>
+        )}
+
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600">
             Don't have an account?{' '}
@@ -388,6 +430,7 @@ export function LoginPage({ onLoginSuccess, showToast }: LoginPageProps) {
           </p>
         </div>
       </div>
+      <DownloadAppLink variant="banner" className="w-full max-w-md" />
     </div>
   );
 }

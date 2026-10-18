@@ -10,11 +10,19 @@ import {
   Calendar,
   Search,
   Tag,
+  SlidersHorizontal,
+  Store,
+  Package,
+  Phone,
+  StickyNote,
+  ChevronRight,
+  FileText,
   CreditCard,
   X,
   ChevronDown,
 } from 'lucide-react';
 import api from '../api';
+import { Fact, DetailSheet } from '../components/DetailSheet';
 import type { Expense, ExpenseCategory, PaymentMethod } from '../types';
 
 interface ExpensesPageProps {
@@ -51,6 +59,8 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
   const [localSearchTerm, setLocalSearchTerm] = useState<string>('');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [detail, setDetail] = useState<Expense | null>(null);
 
   // Add / Edit Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -223,14 +233,15 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
   };
 
   const hasActiveFilters = categoryFilter !== 'ALL' || localSearchTerm || dateFrom || dateTo;
+  const activeFilterCount = [categoryFilter !== 'ALL', !!dateFrom, !!dateTo].filter(Boolean).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Top Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 bg-white p-3 sm:p-5 rounded-xl border border-slate-200 shadow-sm">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Day-to-day Expenses</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Quick daily & weekly expense entry</p>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900">Day-to-day Expenses</h2>
+          <p className="hidden sm:block text-xs text-slate-500 mt-0.5">Quick daily & weekly expense entry</p>
         </div>
         <button
           onClick={() => {
@@ -238,28 +249,43 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
             setEditingExpense(null);
             setIsModalOpen(true);
           }}
-          className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-4 py-2 rounded-lg shadow-sm transition-colors shrink-0"
+          className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-4 py-2.5 h-10 sm:h-auto sm:min-h-0 sm:py-2 justify-center rounded-lg shadow-sm transition-colors shrink-0"
         >
           <Plus className="w-4 h-4" />
           <span>Log Daily Expense</span>
         </button>
       </div>
 
-      {/* ✅ Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search expenses by item, vendor, or invoice number..."
-          value={localSearchTerm}
-          onChange={(e) => setLocalSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-        />
+      {/* ✅ Search Bar + Filters toggle */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 min-w-0">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search item, vendor, invoice..."
+            value={localSearchTerm}
+            onChange={(e) => setLocalSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 h-10 sm:h-auto py-0 sm:py-2.5 border border-slate-300 rounded-xl text-base sm:text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(o => !o)}
+          aria-label="Toggle filters"
+          aria-expanded={filtersOpen}
+          className="md:hidden relative h-10 px-3 shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-700"
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold inline-flex items-center justify-center">{activeFilterCount}</span>
+          )}
+        </button>
       </div>
 
       {/* ✅ Always Visible Filters */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-        <div className="flex items-center justify-between mb-3">
+      <div className={`${filtersOpen ? 'block' : 'hidden'} md:block bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-xs`}>
+        <div className="hidden md:flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-slate-500" />
             <span className="text-sm font-semibold text-slate-700">Filters</span>
@@ -270,20 +296,20 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium py-2 pl-2"
             >
               Clear All Filters
             </button>
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Category</label>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+          <div className="col-span-2 sm:col-span-1">
+            <label className="block text-[11px] sm:text-xs font-medium text-slate-600 mb-1">Category</label>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg text-base sm:text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="ALL">All Categories</option>
               {expenseCategories.map(cat => (
@@ -293,67 +319,67 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">From Date</label>
+            <label className="block text-[11px] sm:text-xs font-medium text-slate-600 mb-1">From Date</label>
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg text-base sm:text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">To Date</label>
+            <label className="block text-[11px] sm:text-xs font-medium text-slate-600 mb-1">To Date</label>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg text-base sm:text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
-          <div className="flex items-end">
+          <div className={`${hasActiveFilters ? 'flex' : 'hidden md:flex'} col-span-2 sm:col-span-1 items-end`}>
             <button
               onClick={clearFilters}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
             >
-              Reset Filters
+              <span className="md:hidden">Clear all</span><span className="hidden md:inline">Reset Filters</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-500 font-medium">Total Mess Expenditure</div>
-            <div className="text-2xl font-bold text-slate-900 mt-0.5">₹{filteredSummary.total.toLocaleString()}</div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+        <div className="bg-white p-2.5 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="min-w-0">
+            <div className="text-[11px] sm:text-xs truncate text-slate-500 font-medium">Total Mess Expenditure</div>
+            <div className="text-lg sm:text-2xl leading-tight font-bold text-slate-900 mt-0.5">₹{filteredSummary.total.toLocaleString()}</div>
           </div>
-          <div className="p-2.5 bg-rose-50 text-rose-600 rounded-lg">
-            <IndianRupee className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-500 font-medium">Total Purchase Invoices</div>
-            <div className="text-2xl font-bold text-slate-900 mt-0.5">{filteredSummary.count} bills</div>
-          </div>
-          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
-            <Receipt className="w-5 h-5" />
+          <div className="p-1.5 sm:p-2.5 shrink-0 ml-1 bg-rose-50 text-rose-600 rounded-lg">
+            <IndianRupee className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-500 font-medium">Average Spend per Bill</div>
-            <div className="text-2xl font-bold text-slate-900 mt-0.5">
+        <div className="bg-white p-2.5 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="min-w-0">
+            <div className="text-[11px] sm:text-xs truncate text-slate-500 font-medium">Total Purchase Invoices</div>
+            <div className="text-lg sm:text-2xl leading-tight font-bold text-slate-900 mt-0.5">{filteredSummary.count} bills</div>
+          </div>
+          <div className="p-1.5 sm:p-2.5 shrink-0 ml-1 bg-blue-50 text-blue-600 rounded-lg">
+            <Receipt className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+          </div>
+        </div>
+
+        <div className="col-span-2 sm:col-span-1 bg-white p-2.5 sm:p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="min-w-0">
+            <div className="text-[11px] sm:text-xs truncate text-slate-500 font-medium">Average Spend per Bill</div>
+            <div className="text-lg sm:text-2xl leading-tight font-bold text-slate-900 mt-0.5">
               ₹{filteredSummary.count ? Math.round(filteredSummary.total / filteredSummary.count).toLocaleString() : 0}
             </div>
           </div>
-          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
-            <Tag className="w-5 h-5" />
+          <div className="p-1.5 sm:p-2.5 shrink-0 ml-1 bg-amber-50 text-amber-600 rounded-lg">
+            <Tag className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </div>
         </div>
       </div>
@@ -362,9 +388,9 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
       {Object.keys(filteredSummary.categoryWise).length > 0 && (
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Category-wise Breakdown</h4>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             {Object.entries(filteredSummary.categoryWise).map(([category, amount]) => (
-              <div key={category} className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
+              <div key={category} className="flex items-center gap-2 min-w-0 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
                 <span className="text-xs font-medium text-slate-600">{category.replace('_', ' ')}</span>
                 <span className="text-xs font-bold text-slate-900">₹{amount.toLocaleString()}</span>
               </div>
@@ -375,7 +401,81 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
 
       {/* Expenses Table */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-        <div className="overflow-x-auto">
+        {/* Mobile card list */}
+        <div className="md:hidden px-3 py-2 text-[11px] text-slate-500 border-b border-slate-100">{filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}</div>
+        <div className="md:hidden divide-y divide-slate-100">
+          {filtered.length === 0 ? (
+            <div className="py-8 px-4 text-center text-slate-400">
+              {safeExpenses.length === 0 ? (
+                <div className="space-y-2">
+                  <Receipt className="w-10 h-10 mx-auto text-slate-300" />
+                  <p className="text-sm font-semibold">No expenses recorded yet.</p>
+                </div>
+              ) : (
+                <p className="text-sm font-semibold">No expenses match your filters.</p>
+              )}
+            </div>
+          ) : (
+            filtered.map((exp, idx) => (
+              <button
+                type="button"
+                key={exp.id || idx}
+                onClick={() => setDetail(exp)}
+                className="w-full text-left active:bg-slate-50 flex items-center gap-2 px-3 py-2.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <div className="text-lg font-bold leading-tight text-slate-900 truncate min-w-0">{exp.itemName || 'Expense Item'}</div>
+                    <div className="text-base font-bold tabular-nums text-slate-900 shrink-0">
+                      ₹{((exp.quantity || 1) * (exp.rate || 0)).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="mt-1 flex items-center gap-x-3 gap-y-1 min-w-0">
+                    <span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                      {(exp.category || 'MISCELLANEOUS').replace('_', ' ')}
+                    </span>
+                    <Fact icon={Calendar} label="Date">{exp.expenseDate || 'N/A'}</Fact>
+                    <Fact icon={Store} label="Vendor">{exp.vendorName || 'Local Market'}</Fact>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" aria-hidden="true" />
+              </button>
+            ))
+          )}
+        </div>
+        {(() => {
+          const d = detail ? (safeExpenses.find(e => e.id && e.id === detail.id) || detail) : null;
+          if (!d) return null;
+          return (
+            <DetailSheet
+              open
+              onClose={() => setDetail(null)}
+              title={d.itemName || 'Expense Item'}
+              subtitle={d.expenseDate || undefined}
+              badges={
+                <span className="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">
+                  {(d.category || 'MISCELLANEOUS').replace('_', ' ')}
+                </span>
+              }
+              headline={<>₹{((d.quantity || 1) * (d.rate || 0)).toLocaleString()}</>}
+              fields={[
+                { icon: Calendar, label: 'Date', value: d.expenseDate || 'N/A' },
+                { icon: Package, label: 'Quantity & rate', value: `${d.quantity || 1} ${d.unit || 'units'} @ ₹${d.rate || 0}/${d.unit || 'unit'}` },
+                { icon: Store, label: 'Vendor', value: d.vendorName || 'Local Market' },
+                ...(d.vendorPhone ? [{ icon: Phone, label: 'Vendor phone', value: d.vendorPhone }] : []),
+                { icon: FileText, label: 'Invoice', value: d.invoiceNumber || 'No invoice #' },
+                { icon: CreditCard, label: 'Payment', value: d.paymentMethod },
+                ...(d.subCategory ? [{ icon: Tag, label: 'Sub-category', value: d.subCategory }] : []),
+                ...(d.remarks ? [{ icon: StickyNote, label: 'Remarks', value: d.remarks, wide: true }] : []),
+              ]}
+              actions={[
+                { label: 'Edit', icon: Edit2, onClick: () => { setDetail(null); startEdit(d); } },
+                { label: 'Delete', icon: Trash2, tone: 'danger', onClick: () => { setDetail(null); handleDelete(d); } },
+              ]}
+            />
+          );
+        })()}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
@@ -461,7 +561,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
         </div>
         
         {filtered.length > 0 && (
-          <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
+          <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 text-xs">
             <span className="text-slate-500">
               Showing {filtered.length} of {safeExpenses.length} expenses
             </span>
@@ -474,21 +574,21 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
 
       {/* Add / Edit Expense Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full max-h-[92dvh] overflow-y-auto rounded-b-none sm:rounded-b-xl">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
               <h3 className="font-bold text-slate-900 text-base">
                 {editingExpense ? 'Edit Mess Expense' : 'Log Mess Expense'}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 w-10 h-10 -mr-2 flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveExpense} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleSaveExpense} className="p-4 sm:p-6 space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 font-semibold mb-1">Expense Date *</label>
@@ -497,7 +597,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
                     required
                     value={formData.expenseDate || ''}
                     onChange={e => setFormData({ ...formData, expenseDate: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
 
@@ -506,7 +606,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
                   <select
                     value={formData.category || 'VEGETABLES'}
                     onChange={e => setFormData({ ...formData, category: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                    className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
                   >
                     {expenseCategories.map(cat => (
                       <option key={cat} value={cat}>
@@ -525,11 +625,11 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
                   placeholder="e.g. Potatoes, Tomatoes, Basmati Rice, Amul Milk"
                   value={formData.itemName || ''}
                   onChange={e => setFormData({ ...formData, itemName: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-slate-700 font-semibold mb-1">Quantity</label>
                   <input
@@ -552,7 +652,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
                       }
                     }}
                     placeholder="0"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
 
@@ -562,7 +662,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
                     <select
                       value={formData.unit || 'kg'}
                       onChange={(e) => handleUnitChange(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                      className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
                       required
                     >
                       {PREDEFINED_UNITS.map(unit => (
@@ -581,7 +681,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
                         onChange={(e) => setCustomUnit(e.target.value)}
                         onBlur={handleCustomUnitBlur}
                         onKeyPress={handleCustomUnitKeyPress}
-                        className="flex-1 px-3 py-2 border border-blue-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-blue-50"
+                        className="flex-1 min-w-0 px-3 py-2.5 sm:py-2 text-base sm:text-xs border border-blue-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-blue-50"
                         autoFocus
                       />
                       <button
@@ -592,7 +692,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
                             setShowCustomUnitInput(false);
                           }
                         }}
-                        className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition-colors"
+                        className="px-3 py-2.5 sm:py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition-colors"
                       >
                         Add
                       </button>
@@ -602,7 +702,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
                           setShowCustomUnitInput(false);
                           setCustomUnit('');
                         }}
-                        className="px-3 py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50"
+                        className="px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50"
                       >
                         Cancel
                       </button>
@@ -641,7 +741,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
                       }
                     }}
                     placeholder="0"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -662,7 +762,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
                     placeholder="e.g. Sabzi Mandi Vendor, Kirana Store"
                     value={formData.vendorName || ''}
                     onChange={e => setFormData({ ...formData, vendorName: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
 
@@ -673,7 +773,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
                     placeholder="e.g. INV-2024-88"
                     value={formData.invoiceNumber || ''}
                     onChange={e => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -683,7 +783,7 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
                 <select
                   value={formData.paymentMethod || 'CASH'}
                   onChange={e => setFormData({ ...formData, paymentMethod: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                  className="w-full px-3 py-2.5 sm:py-2 text-base sm:text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
                 >
                   <option value="CASH">CASH</option>
                   <option value="UPI">UPI / GooglePay / PhonePe</option>
@@ -691,17 +791,17 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
                 </select>
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2">
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2 sticky bottom-0 bg-white pb-[env(safe-area-inset-bottom)]">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50 transition-colors"
+                  className="px-4 py-2.5 min-h-[44px] sm:min-h-0 sm:py-2 flex-1 sm:flex-none border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-xs transition-colors"
+                  className="px-4 py-2.5 min-h-[44px] sm:min-h-0 sm:py-2 flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-xs transition-colors"
                 >
                   {editingExpense ? 'Save Changes' : 'Record Expense'}
                 </button>

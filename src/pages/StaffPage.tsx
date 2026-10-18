@@ -18,10 +18,22 @@ import {
   LayoutGrid,
   List,
   CheckCircle,
+  Clock,
+  SlidersHorizontal,
+  ChevronRight,
+  Mail,
+  MapPin,
+  Briefcase,
+  Landmark,
+  Hash,
+  StickyNote,
+  Wallet,
   RefreshCw,
   AlertCircle,
 } from 'lucide-react';
 import api from '../api';
+import { Fact, DetailSheet } from '../components/DetailSheet';
+import type { DetailField, DetailAction } from '../components/DetailSheet';
 import type { Staff, StaffPayment, StaffAdvance, StaffPosition } from '../types';
 import { Avatar } from '../components/Avatar';
 import { ProfileImageUploader } from '../components/ProfileImageUploader';
@@ -59,6 +71,10 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
   const [advances, setAdvances] = useState<StaffAdvance[]>([]);
   const [activeTab, setActiveTab] = useState<'ROSTER' | 'PAYMENTS' | 'ADVANCES'>('ROSTER');
   const [loading, setLoading] = useState(true);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [detailStaffId, setDetailStaffId] = useState<string | null>(null);
+  const [detailPaymentId, setDetailPaymentId] = useState<string | null>(null);
+  const [detailAdvanceId, setDetailAdvanceId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'CARD' | 'TABLE'>('CARD');
 
   // Filter states
@@ -661,14 +677,60 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
     setIsAdvanceStatusModalOpen(true);
   };
 
+  const detailStaff = detailStaffId ? staffList.find(x => x.id === detailStaffId) : undefined;
+  const detailPayment = detailPaymentId ? payments.find(x => x.id === detailPaymentId) : undefined;
+  const detailAdvance = detailAdvanceId ? advances.find(x => x.id === detailAdvanceId) : undefined;
+
+  const buildStaffSheet = (st: Staff) => {
+    const out = getTotalOutstandingAdvance(st.id);
+    const paid = isSalaryPaidForMonth(st.id, new Date().getMonth() + 1, new Date().getFullYear());
+    const fields: DetailField[] = [
+      { icon: Briefcase, label: 'Role', value: st.position?.replace('_', ' ') || 'OTHER' },
+      { icon: Phone, label: 'Phone', value: st.phoneNumber },
+      st.email ? { icon: Mail, label: 'Email', value: st.email, wide: true } : null,
+      st.address ? { icon: MapPin, label: 'Address', value: st.address, wide: true } : null,
+      { icon: Calendar, label: 'Joined', value: st.joiningDate },
+      st.employmentType ? { icon: Clock, label: 'Type', value: st.employmentType.replace('_', ' ') } : null,
+      { icon: IndianRupee, label: 'Monthly salary', value: `₹${(st.baseSalary || 0).toLocaleString()}` },
+      out > 0 ? { icon: HandCoins, label: 'Outstanding advance', value: `₹${out.toLocaleString()}`, tone: 'warn' as const } : null,
+      st.emergencyContact ? { icon: User, label: 'Emergency contact', value: st.emergencyContact } : null,
+      st.emergencyPhone ? { icon: Phone, label: 'Emergency phone', value: st.emergencyPhone } : null,
+      st.bankName ? { icon: Landmark, label: 'Bank', value: st.bankName } : null,
+      st.bankAccountNumber ? { icon: Hash, label: 'Account no.', value: st.bankAccountNumber } : null,
+      st.ifscCode ? { icon: Hash, label: 'IFSC', value: st.ifscCode } : null,
+    ].filter(Boolean) as DetailField[];
+    const actions: DetailAction[] = [];
+    if (!paid) actions.push({ label: 'Pay Salary', icon: IndianRupee, tone: 'primary', onClick: () => { setDetailStaffId(null); openPaymentModal(st); } });
+    actions.push(
+      {
+        label: 'Advance', icon: HandCoins, onClick: () => {
+          setDetailStaffId(null);
+          setSelectedStaff(st);
+          setAdvanceForm({
+            amount: 5000,
+            advanceDate: new Date().toISOString().split('T')[0],
+            reason: 'Medical emergency',
+            installmentMonths: 2,
+            monthlyDeduction: 2500,
+            remarks: '',
+          });
+          setIsAdvanceModalOpen(true);
+        },
+      },
+      { label: 'Edit', icon: Edit2, onClick: () => { setDetailStaffId(null); setEditingStaff(st); setStaffForm({ ...st }); setIsStaffModalOpen(true); } },
+      { label: 'Delete', icon: Trash2, tone: 'danger', onClick: () => { setDetailStaffId(null); handleDeleteStaff(st); } },
+    );
+    return { fields, actions, paid };
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Top Header & Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center space-x-2 flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible -mx-1 px-1 pb-1 sm:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             onClick={() => setActiveTab('ROSTER')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'ROSTER'
+            className={`px-3 py-2 min-h-[40px] sm:min-h-0 sm:py-1.5 whitespace-nowrap shrink-0 rounded-lg text-xs font-semibold transition-all ${activeTab === 'ROSTER'
               ? 'bg-slate-900 text-white shadow-xs'
               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
@@ -677,7 +739,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
           </button>
           <button
             onClick={() => setActiveTab('PAYMENTS')}
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'PAYMENTS'
+            className={`flex items-center space-x-1 px-3 py-2 min-h-[40px] sm:min-h-0 sm:py-1.5 whitespace-nowrap shrink-0 rounded-lg text-xs font-semibold transition-all ${activeTab === 'PAYMENTS'
               ? 'bg-slate-900 text-white shadow-xs'
               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
@@ -687,7 +749,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
           </button>
           <button
             onClick={() => setActiveTab('ADVANCES')}
-            className={`flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'ADVANCES'
+            className={`flex items-center space-x-1 px-3 py-2 min-h-[40px] sm:min-h-0 sm:py-1.5 whitespace-nowrap shrink-0 rounded-lg text-xs font-semibold transition-all ${activeTab === 'ADVANCES'
               ? 'bg-slate-900 text-white shadow-xs'
               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
@@ -697,12 +759,12 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
           </button>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-between sm:justify-start gap-2">
           {activeTab === 'ROSTER' && (
             <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200">
               <button
                 onClick={() => setViewMode('CARD')}
-                className={`p-1.5 rounded-md text-xs font-medium flex items-center space-x-1 transition-all ${viewMode === 'CARD'
+                className={`p-2 sm:p-1.5 min-h-[36px] sm:min-h-0 rounded-md text-xs font-medium flex items-center space-x-1 transition-all ${viewMode === 'CARD'
                   ? 'bg-white text-slate-900 shadow-xs font-bold'
                   : 'text-slate-500 hover:text-slate-900'
                   }`}
@@ -712,7 +774,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
               </button>
               <button
                 onClick={() => setViewMode('TABLE')}
-                className={`p-1.5 rounded-md text-xs font-medium flex items-center space-x-1 transition-all ${viewMode === 'TABLE'
+                className={`p-2 sm:p-1.5 min-h-[36px] sm:min-h-0 rounded-md text-xs font-medium flex items-center space-x-1 transition-all ${viewMode === 'TABLE'
                   ? 'bg-white text-slate-900 shadow-xs font-bold'
                   : 'text-slate-500 hover:text-slate-900'
                   }`}
@@ -738,7 +800,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
               setPendingStaffImage(null);
               setIsStaffModalOpen(true);
             }}
-            className="inline-flex items-center space-x-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs shadow-xs transition-colors shrink-0"
+            className="inline-flex items-center space-x-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2.5 min-h-[40px] sm:min-h-0 sm:py-2 rounded-lg text-xs shadow-xs transition-colors shrink-0"
           >
             <UserPlus className="w-4 h-4" />
             <span>Add Staff Member</span>
@@ -747,37 +809,38 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
       </div>
 
       {/* Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-500 font-medium">Total Staff Employed</div>
-            <div className="text-xl font-bold text-slate-900 mt-0.5">{staffList.length} members</div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
+        <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-[11px] sm:text-xs font-semibold sm:font-medium text-slate-500 truncate">Total Staff</div>
+            <div className="text-lg sm:text-xl font-bold leading-tight mt-0.5 text-slate-900">{staffList.length} members</div>
           </div>
-          <div className="p-2.5 bg-slate-100 text-slate-600 rounded-lg">
+          <div className="hidden sm:block p-2.5 rounded-lg bg-slate-100 text-slate-600">
             <UserCog className="w-5 h-5" />
           </div>
+          <UserCog className="sm:hidden w-3.5 h-3.5 shrink-0 self-start text-slate-400" />
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-500 font-medium">Total Monthly Payroll</div>
-            <div className="text-xl font-bold text-slate-900 mt-0.5">₹{totalMonthlyPayroll.toLocaleString()}</div>
+        <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-[11px] sm:text-xs font-semibold sm:font-medium text-slate-500 truncate">Monthly Payroll</div>
+            <div className="text-lg sm:text-xl font-bold leading-tight mt-0.5 text-slate-900">₹{totalMonthlyPayroll.toLocaleString()}</div>
           </div>
-          <div className="p-2.5 bg-rose-50 text-rose-600 rounded-lg">
+          <div className="hidden sm:block p-2.5 rounded-lg bg-rose-50 text-rose-600">
             <IndianRupee className="w-5 h-5" />
           </div>
+          <IndianRupee className="sm:hidden w-3.5 h-3.5 shrink-0 self-start text-slate-400" />
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-500 font-medium">Active Advances Outstanding</div>
-            <div className="text-xl font-bold text-amber-600 mt-0.5">
-              ₹{totalOutstandingAdvances.toLocaleString()}
-            </div>
+        <div className="bg-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between gap-2 col-span-2 sm:col-span-1">
+          <div className="min-w-0">
+            <div className="text-[11px] sm:text-xs font-semibold sm:font-medium text-slate-500 truncate">Advances Outstanding</div>
+            <div className="text-lg sm:text-xl font-bold leading-tight mt-0.5 text-amber-600">₹{totalOutstandingAdvances.toLocaleString()}</div>
           </div>
-          <div className="p-2.5 bg-amber-50 text-amber-600 rounded-lg">
+          <div className="hidden sm:block p-2.5 rounded-lg bg-amber-50 text-amber-600">
             <HandCoins className="w-5 h-5" />
           </div>
+          <HandCoins className="sm:hidden w-3.5 h-3.5 shrink-0 self-start text-slate-400" />
         </div>
       </div>
 
@@ -796,25 +859,45 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
           </div>
 
           {viewMode === 'CARD' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-5">
               {filteredStaff.length === 0 ? (
-                <div className="col-span-full bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-400">
+                <div className="col-span-full bg-white rounded-xl border border-slate-200 p-8 sm:p-12 text-center text-slate-400">
                   <User className="w-12 h-12 mx-auto text-slate-300 mb-2" />
                   <p className="text-sm font-semibold">No staff members found.</p>
                 </div>
               ) : (
                 filteredStaff.map(staff => {
                   const outstanding = getTotalOutstandingAdvance(staff.id);
-                  const alreadyPaid = isSalaryPaidForMonth(
-                    staff.id,
-                    new Date().getMonth() + 1,
-                    new Date().getFullYear()
-                  );
+                  const alreadyPaid = isSalaryPaidForMonth(staff.id, new Date().getMonth() + 1, new Date().getFullYear());
                   return (
-                    <div
-                      key={staff.id}
-                      className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-all"
-                    >
+                  <React.Fragment key={staff.id}>
+                    <div className="sm:hidden rounded-xl border border-slate-200 bg-white overflow-hidden">
+                      <button type="button" onClick={() => setDetailStaffId(staff.id ?? null)} className="w-full text-left active:bg-slate-50 flex items-center gap-3 px-3 py-2.5 min-w-0" aria-label={`View details for ${staff.fullName}`}>
+                        <Avatar
+                          src={staff.primaryImageUrl}
+                          name={staff.fullName || 'User'}
+                          size="sm"
+                          colorClass={`text-white ${getAvatarColor(staff.fullName || 'User')}`}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <h3 className="text-[15px] font-semibold text-slate-900 truncate leading-tight">{staff.fullName}</h3>
+                            <span className="text-base font-bold tabular-nums text-slate-900 shrink-0">₹{(staff.baseSalary || 0).toLocaleString()}</span>
+                          </div>
+                          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 ${alreadyPaid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                              {alreadyPaid ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                              {alreadyPaid ? 'Paid' : 'Pending'}
+                            </span>
+                            <Fact icon={Briefcase} label="Role">{staff.position?.replace('_', ' ') || 'OTHER'}</Fact>
+                            {staff.phoneNumber && <Fact icon={Phone} label="Phone">{staff.phoneNumber}</Fact>}
+                            {outstanding > 0 && <Fact icon={HandCoins} label="Outstanding advance" tone="warn">₹{outstanding.toLocaleString()}</Fact>}
+                          </div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" aria-hidden="true" />
+                      </button>
+                    </div>
+                    <div className="hidden sm:block bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-all">
                       <div className="p-4 flex items-start gap-4">
                         <Avatar
                           src={staff.primaryImageUrl}
@@ -822,7 +905,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                           size="lg"
                           colorClass={`text-white ${getAvatarColor(staff.fullName || 'User')}`}
                         />
-
+                    
                         <div className="flex-1 min-w-0">
                           <h3 className="font-bold text-slate-900 truncate">{staff.fullName}</h3>
                           <p className="text-xs text-slate-500 truncate">{staff.position?.replace('_', ' ') || 'OTHER'}</p>
@@ -846,7 +929,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                           )}
                         </div>
                       </div>
-
+                    
                       <div className="px-4 pb-4 flex gap-1.5">
                         <button
                           onClick={() => openPaymentModal(staff)}
@@ -882,25 +965,64 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                             setStaffForm({ ...staff });
                             setIsStaffModalOpen(true);
                           }}
-                          className="p-1.5 hover:bg-slate-100 text-slate-500 rounded-lg transition-colors"
+                          className="p-1.5 flex items-center justify-center hover:bg-slate-100 text-slate-500 rounded-lg transition-colors" aria-label="Edit staff"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDeleteStaff(staff)}
-                          className="p-1.5 hover:bg-rose-50 text-rose-500 rounded-lg transition-colors"
+                          className="p-1.5 flex items-center justify-center hover:bg-rose-50 text-rose-500 rounded-lg transition-colors" aria-label="Delete staff"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
+                  </React.Fragment>
                   );
                 })
               )}
             </div>
           ) : (
             <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-              <div className="overflow-x-auto">
+              <div className="md:hidden divide-y divide-slate-100">
+                {filteredStaff.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-slate-400">No staff members registered.</div>
+                ) : (
+                  filteredStaff.map(staff => {
+                    const outstanding = getTotalOutstandingAdvance(staff.id);
+                    const alreadyPaid = isSalaryPaidForMonth(staff.id, new Date().getMonth() + 1, new Date().getFullYear());
+                    return (
+                    <div key={staff.id}>
+                    <button type="button" onClick={() => setDetailStaffId(staff.id ?? null)} className="w-full text-left active:bg-slate-50 flex items-center gap-3 px-3 py-2.5 min-w-0" aria-label={`View details for ${staff.fullName}`}>
+                      <Avatar
+                        src={staff.primaryImageUrl}
+                        name={staff.fullName || 'User'}
+                        size="sm"
+                        colorClass={`text-white ${getAvatarColor(staff.fullName || 'User')}`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <h3 className="text-[15px] font-semibold text-slate-900 truncate leading-tight">{staff.fullName}</h3>
+                          <span className="text-base font-bold tabular-nums text-slate-900 shrink-0">₹{(staff.baseSalary || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 ${alreadyPaid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                            {alreadyPaid ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                            {alreadyPaid ? 'Paid' : 'Pending'}
+                          </span>
+                          <Fact icon={Briefcase} label="Role">{staff.position?.replace('_', ' ') || 'OTHER'}</Fact>
+                          {staff.phoneNumber && <Fact icon={Phone} label="Phone">{staff.phoneNumber}</Fact>}
+                          {outstanding > 0 && <Fact icon={HandCoins} label="Outstanding advance" tone="warn">₹{outstanding.toLocaleString()}</Fact>}
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" aria-hidden="true" />
+                    </button>
+                    </div>
+                    );
+                  })
+                )}
+              </div>
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
@@ -1029,8 +1151,48 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
       {/* PAYMENTS TAB */}
       {activeTab === 'PAYMENTS' && (
         <div className="space-y-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
+          <div className="md:hidden space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search staff name..."
+                  value={paymentSearchTerm}
+                  onChange={(e) => setPaymentSearchTerm(e.target.value)}
+                  className="w-full h-10 pl-9 pr-3 border border-slate-300 rounded-lg text-sm bg-white"
+                />
+              </div>
+              <button
+                onClick={() => setMobileFiltersOpen(o => !o)}
+                className="relative h-10 px-3 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-medium inline-flex items-center gap-1.5 shrink-0"
+                aria-label="Toggle filters"
+                aria-expanded={mobileFiltersOpen}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                Filters
+                {((paymentDateFrom ? 1 : 0) + (paymentDateTo ? 1 : 0) + (paymentSearchTerm ? 1 : 0)) > 0 && (
+                  <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold inline-flex items-center justify-center">
+                    {(paymentDateFrom ? 1 : 0) + (paymentDateTo ? 1 : 0) + (paymentSearchTerm ? 1 : 0)}
+                  </span>
+                )}
+              </button>
+            </div>
+            <div className={`${mobileFiltersOpen ? 'grid' : 'hidden'} grid-cols-2 gap-2`}>
+              <label className="text-[11px] font-semibold text-slate-500">From
+                <input type="date" value={paymentDateFrom} onChange={(e) => setPaymentDateFrom(e.target.value)} className="mt-0.5 w-full h-10 px-2 border border-slate-300 rounded-lg text-sm bg-white" />
+              </label>
+              <label className="text-[11px] font-semibold text-slate-500">To
+                <input type="date" value={paymentDateTo} onChange={(e) => setPaymentDateTo(e.target.value)} className="mt-0.5 w-full h-10 px-2 border border-slate-300 rounded-lg text-sm bg-white" />
+              </label>
+              {(paymentSearchTerm || paymentDateFrom || paymentDateTo) && (
+                <button onClick={clearPaymentFilters} className="col-span-2 text-xs text-blue-600 font-medium py-1">Clear all</button>
+              )}
+            </div>
+            <div className="text-xs text-slate-500">{filteredPayments.length} of {payments.length} payments</div>
+          </div>
+          <div className="hidden md:block bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-2 mb-3">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-slate-500" />
                 <span className="text-sm font-semibold text-slate-700">Filters</span>
@@ -1039,7 +1201,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                 )}
               </div>
               {(paymentSearchTerm || paymentDateFrom || paymentDateTo) && (
-                <button onClick={clearPaymentFilters} className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                <button onClick={clearPaymentFilters} className="text-xs text-blue-600 hover:text-blue-800 font-medium py-2 -my-2 shrink-0">
                   Clear All Filters
                 </button>
               )}
@@ -1054,7 +1216,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                     placeholder="Search staff name..."
                     value={paymentSearchTerm}
                     onChange={(e) => setPaymentSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-9 pr-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -1064,7 +1226,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                   type="date"
                   value={paymentDateFrom}
                   onChange={(e) => setPaymentDateFrom(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -1073,14 +1235,42 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                   type="date"
                   value={paymentDateTo}
                   onChange={(e) => setPaymentDateTo(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
+            <div className="md:hidden divide-y divide-slate-100">
+              {filteredPayments.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  {payments.length === 0 ? 'No salary payment logs found.' : 'No payments match your filters.'}
+                </div>
+              ) : (
+                filteredPayments.map(p => {
+                  const staff = getStaffObject(p);
+                  const staffName = staff?.fullName || getStaffName(p) || 'Unknown Staff';
+                  return (
+                    <button key={p.id} type="button" onClick={() => setDetailPaymentId(p.id ?? null)} className="w-full text-left active:bg-slate-50 flex items-center gap-3 px-3 py-2.5 min-w-0" aria-label={`View details for ${staffName} payment`}>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <h3 className="text-[15px] font-semibold text-slate-900 truncate leading-tight">{staffName}</h3>
+                          <span className="text-base font-bold tabular-nums text-emerald-600 shrink-0">₹{(p.amount || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 bg-emerald-50 text-emerald-700 border-emerald-200">{p.paymentMonth} {p.paymentYear}</span>
+                          {p.paymentDate && <Fact icon={Calendar} label="Payment date">{p.paymentDate}</Fact>}
+                          <Fact icon={CreditCard} label="Payment method">{p.paymentMethod || 'CASH'}</Fact>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" aria-hidden="true" />
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
@@ -1138,7 +1328,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
               </table>
             </div>
             {filteredPayments.length > 0 && (
-              <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
+              <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
                 <span className="text-slate-500">Showing {filteredPayments.length} of {payments.length} payments</span>
                 <span className="font-semibold text-slate-700">
                   Total: ₹{filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0).toLocaleString()}
@@ -1152,8 +1342,48 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
       {/* ADVANCES TAB */}
       {activeTab === 'ADVANCES' && (
         <div className="space-y-4">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
+          <div className="md:hidden space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search staff name..."
+                  value={advanceSearchTerm}
+                  onChange={(e) => setAdvanceSearchTerm(e.target.value)}
+                  className="w-full h-10 pl-9 pr-3 border border-slate-300 rounded-lg text-sm bg-white"
+                />
+              </div>
+              <button
+                onClick={() => setMobileFiltersOpen(o => !o)}
+                className="relative h-10 px-3 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-medium inline-flex items-center gap-1.5 shrink-0"
+                aria-label="Toggle filters"
+                aria-expanded={mobileFiltersOpen}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                Filters
+                {((advanceDateFrom ? 1 : 0) + (advanceDateTo ? 1 : 0) + (advanceSearchTerm ? 1 : 0)) > 0 && (
+                  <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white text-[10px] font-bold inline-flex items-center justify-center">
+                    {(advanceDateFrom ? 1 : 0) + (advanceDateTo ? 1 : 0) + (advanceSearchTerm ? 1 : 0)}
+                  </span>
+                )}
+              </button>
+            </div>
+            <div className={`${mobileFiltersOpen ? 'grid' : 'hidden'} grid-cols-2 gap-2`}>
+              <label className="text-[11px] font-semibold text-slate-500">From
+                <input type="date" value={advanceDateFrom} onChange={(e) => setAdvanceDateFrom(e.target.value)} className="mt-0.5 w-full h-10 px-2 border border-slate-300 rounded-lg text-sm bg-white" />
+              </label>
+              <label className="text-[11px] font-semibold text-slate-500">To
+                <input type="date" value={advanceDateTo} onChange={(e) => setAdvanceDateTo(e.target.value)} className="mt-0.5 w-full h-10 px-2 border border-slate-300 rounded-lg text-sm bg-white" />
+              </label>
+              {(advanceSearchTerm || advanceDateFrom || advanceDateTo) && (
+                <button onClick={clearAdvanceFilters} className="col-span-2 text-xs text-blue-600 font-medium py-1">Clear all</button>
+              )}
+            </div>
+            <div className="text-xs text-slate-500">{filteredAdvances.length} of {advances.length} advances</div>
+          </div>
+          <div className="hidden md:block bg-white border border-slate-200 rounded-xl p-3 sm:p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-2 mb-3">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-slate-500" />
                 <span className="text-sm font-semibold text-slate-700">Filters</span>
@@ -1162,7 +1392,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                 )}
               </div>
               {(advanceSearchTerm || advanceDateFrom || advanceDateTo) && (
-                <button onClick={clearAdvanceFilters} className="text-xs text-blue-600 hover:text-blue-800 font-medium">
+                <button onClick={clearAdvanceFilters} className="text-xs text-blue-600 hover:text-blue-800 font-medium py-2 -my-2 shrink-0">
                   Clear All Filters
                 </button>
               )}
@@ -1177,7 +1407,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                     placeholder="Search staff name..."
                     value={advanceSearchTerm}
                     onChange={(e) => setAdvanceSearchTerm(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-9 pr-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -1187,7 +1417,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                   type="date"
                   value={advanceDateFrom}
                   onChange={(e) => setAdvanceDateFrom(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
@@ -1196,14 +1426,47 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                   type="date"
                   value={advanceDateTo}
                   onChange={(e) => setAdvanceDateTo(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
           </div>
 
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
+            <div className="md:hidden divide-y divide-slate-100">
+              {filteredAdvances.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  {advances.length === 0 ? 'No staff advance loans recorded.' : 'No advances match your filters.'}
+                </div>
+              ) : (
+                filteredAdvances.map(a => {
+                  const staffName = getStaffName(a);
+                  const statusColors: Record<string, string> = {
+                    PENDING: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                    APPROVED: 'bg-blue-50 text-blue-700 border-blue-200',
+                    REPAID: 'bg-green-50 text-green-700 border-green-200',
+                    REJECTED: 'bg-red-50 text-red-700 border-red-200',
+                  };
+                  return (
+                    <button key={a.id} type="button" onClick={() => setDetailAdvanceId(a.id ?? null)} className="w-full text-left active:bg-slate-50 flex items-center gap-3 px-3 py-2.5 min-w-0" aria-label={`View details for ${staffName} advance`}>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <h3 className="text-[15px] font-semibold text-slate-900 truncate leading-tight">{staffName}</h3>
+                          <span className="text-base font-bold tabular-nums text-amber-600 shrink-0">₹{(a.amount || a.advanceAmount || 0).toLocaleString()}</span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border shrink-0 ${statusColors[a.status as keyof typeof statusColors] || 'bg-slate-50 text-slate-700 border-slate-200'}`}>{a.status || 'PENDING'}</span>
+                          {a.advanceDate && <Fact icon={Calendar} label="Date given">{a.advanceDate}</Fact>}
+                          <Fact icon={CheckCircle} label="Repaid" tone="good">₹{(a.repaidAmount || a.repaymentAmount || 0).toLocaleString()}</Fact>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" aria-hidden="true" />
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
@@ -1281,7 +1544,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
               </table>
             </div>
             {filteredAdvances.length > 0 && (
-              <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
+              <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
                 <span className="text-slate-500">Showing {filteredAdvances.length} of {advances.length} advances</span>
                 <span className="font-semibold text-amber-700">
                   Total Outstanding: ₹{filteredAdvances
@@ -1302,19 +1565,19 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
 
       {/* Salary Payment Modal */}
       {isPaymentModalOpen && selectedStaff && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full max-h-[92dvh] overflow-y-auto">
+            <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-slate-200 flex items-center justify-between gap-2 sticky top-0 bg-white z-10">
               <div>
-                <h3 className="font-bold text-slate-900 text-sm">Disburse Salary: {selectedStaff.fullName}</h3>
+                <h3 className="font-bold text-slate-900 text-sm break-words min-w-0">Disburse Salary: {selectedStaff.fullName}</h3>
                 <p className="text-[10px] text-slate-400">ID: {selectedStaff.id}</p>
               </div>
-              <button onClick={() => setIsPaymentModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setIsPaymentModalOpen(false)} className="p-3 -m-3 shrink-0 text-slate-400 hover:text-slate-600" aria-label="Close">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handlePaySalary} className="p-5 space-y-4 text-xs">
+            <form onSubmit={handlePaySalary} className="p-4 sm:p-5 space-y-4 text-xs">
               {isSalaryPaidForMonth(
                 selectedStaff.id,
                 paymentForm.paymentMonthNumber,
@@ -1348,13 +1611,13 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                       netPayable: val + (prev.deductAdvance ? totalOutstanding : 0),
                     }));
                   }}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
 
               {selectedStaffAdvances.length > 0 && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                     <span className="font-semibold text-amber-900 text-xs">Outstanding Advances</span>
                     <label className="flex items-center gap-1 text-xs text-amber-900">
                       <input
@@ -1384,7 +1647,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                           const repaidAmount = adv.repaidAmount || adv.repaymentAmount || 0;
                           const remaining = totalAmount - repaidAmount;
                           return (
-                            <div key={adv.id} className="flex items-center justify-between text-xs bg-white/70 rounded p-1.5">
+                            <div key={adv.id} className="flex flex-wrap items-center justify-between gap-x-2 text-xs bg-white/70 rounded p-1.5">
                               <div>
                                 <span className="font-medium text-amber-800">₹{totalAmount.toLocaleString()}</span>
                                 <span className="text-amber-600 ml-1">({adv.reason || adv.purpose || 'No reason'})</span>
@@ -1417,14 +1680,14 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 font-semibold mb-1">Payment Month</label>
                   <input
                     type="text"
                     value={paymentForm.paymentMonth}
                     onChange={e => setPaymentForm({ ...paymentForm, paymentMonth: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1433,7 +1696,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                     type="number"
                     value={paymentForm.paymentYear}
                     onChange={e => setPaymentForm({ ...paymentForm, paymentYear: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -1443,7 +1706,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                 <select
                   value={paymentForm.paymentMethod}
                   onChange={e => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white"
                 >
                   <option value="CASH">Cash in Hand</option>
                   <option value="UPI">UPI / GooglePay</option>
@@ -1457,16 +1720,16 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                   type="text"
                   value={paymentForm.remarks}
                   onChange={e => setPaymentForm({ ...paymentForm, remarks: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+              <div className="pt-3 pb-1 border-t border-slate-100 flex items-center justify-end gap-2 sticky bottom-0 bg-white">
                 <button
                   type="button"
                   onClick={() => setIsPaymentModalOpen(false)}
                   disabled={isSubmittingPayment}
-                  className="px-3 py-1.5 border border-slate-300 rounded-lg text-slate-700 disabled:opacity-50"
+                  className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-3 py-1.5 border border-slate-300 rounded-lg text-slate-700 disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -1480,7 +1743,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                       paymentForm.paymentYear
                     )
                   }
-                  className={`px-4 py-1.5 text-white font-bold rounded-lg shadow-xs flex items-center gap-1.5 ${
+                  className={`flex-1 sm:flex-none justify-center min-h-[44px] sm:min-h-0 px-4 py-1.5 text-white font-bold rounded-lg shadow-xs flex items-center gap-1.5 ${
                     isSubmittingPayment ||
                     isSalaryPaidForMonth(
                       selectedStaff.id,
@@ -1511,16 +1774,16 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
 
       {/* Advance Modal */}
       {isAdvanceModalOpen && selectedStaff && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-sm w-full overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 text-sm">Issue Advance: {selectedStaff.fullName}</h3>
-              <button onClick={() => setIsAdvanceModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-sm w-full max-h-[92dvh] overflow-y-auto">
+            <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-slate-200 flex items-center justify-between gap-2 sticky top-0 bg-white z-10">
+              <h3 className="font-bold text-slate-900 text-sm break-words min-w-0">Issue Advance: {selectedStaff.fullName}</h3>
+              <button onClick={() => setIsAdvanceModalOpen(false)} className="p-3 -m-3 shrink-0 text-slate-400 hover:text-slate-600" aria-label="Close">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleGiveAdvance} className="p-5 space-y-4 text-xs">
+            <form onSubmit={handleGiveAdvance} className="p-4 sm:p-5 space-y-4 text-xs">
               <div>
                 <label className="block text-slate-700 font-semibold mb-1">Staff Member</label>
                 <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 text-sm font-bold text-slate-900">
@@ -1558,7 +1821,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                     }
                   }}
                   placeholder="0"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
 
@@ -1568,7 +1831,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                   type="date"
                   value={advanceForm.advanceDate}
                   onChange={e => setAdvanceForm({ ...advanceForm, advanceDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
 
@@ -1578,11 +1841,11 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                   type="text"
                   value={advanceForm.reason}
                   onChange={e => setAdvanceForm({ ...advanceForm, reason: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 font-semibold mb-1">Installment Months</label>
                   <input
@@ -1597,7 +1860,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                         monthlyDeduction: Math.round(prev.amount / months),
                       }));
                     }}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1606,7 +1869,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                     type="number"
                     value={advanceForm.monthlyDeduction}
                     onChange={e => setAdvanceForm({ ...advanceForm, monthlyDeduction: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -1617,23 +1880,23 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                   type="text"
                   value={advanceForm.remarks}
                   onChange={e => setAdvanceForm({ ...advanceForm, remarks: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+              <div className="pt-3 pb-1 border-t border-slate-100 flex items-center justify-end gap-2 sticky bottom-0 bg-white">
                 <button
                   type="button"
                   onClick={() => setIsAdvanceModalOpen(false)}
                   disabled={isSubmittingAdvance}
-                  className="px-3 py-1.5 border border-slate-300 rounded-lg text-slate-700 disabled:opacity-50"
+                  className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-3 py-1.5 border border-slate-300 rounded-lg text-slate-700 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingAdvance}
-                  className={`px-4 py-1.5 text-white font-bold rounded-lg shadow-xs flex items-center gap-1.5 ${
+                  className={`flex-1 sm:flex-none justify-center min-h-[44px] sm:min-h-0 px-4 py-1.5 text-white font-bold rounded-lg shadow-xs flex items-center gap-1.5 ${
                     isSubmittingAdvance ? 'bg-slate-400 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-700'
                   }`}
                 >
@@ -1657,16 +1920,16 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
 
       {/* Advance Status Edit Modal */}
       {isAdvanceStatusModalOpen && editingAdvance && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-sm w-full overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 text-sm">Update Advance Status</h3>
-              <button onClick={() => setIsAdvanceStatusModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-sm w-full max-h-[92dvh] overflow-y-auto">
+            <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-slate-200 flex items-center justify-between gap-2 sticky top-0 bg-white z-10">
+              <h3 className="font-bold text-slate-900 text-sm break-words min-w-0">Update Advance Status</h3>
+              <button onClick={() => setIsAdvanceStatusModalOpen(false)} className="p-3 -m-3 shrink-0 text-slate-400 hover:text-slate-600" aria-label="Close">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateAdvanceStatus} className="p-5 space-y-4 text-xs">
+            <form onSubmit={handleUpdateAdvanceStatus} className="p-4 sm:p-5 space-y-4 text-xs">
               <div>
                 <label className="block text-slate-700 font-semibold mb-1">Staff Member</label>
                 <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 text-sm font-bold text-slate-900">
@@ -1696,7 +1959,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                     ...advanceStatusForm,
                     status: e.target.value as 'PENDING' | 'APPROVED' | 'REPAID' | 'REJECTED'
                   })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white"
                 >
                   <option value="PENDING">PENDING</option>
                   <option value="APPROVED">APPROVED</option>
@@ -1711,19 +1974,19 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                 </div>
               )}
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+              <div className="pt-3 pb-1 border-t border-slate-100 flex items-center justify-end gap-2 sticky bottom-0 bg-white">
                 <button
                   type="button"
                   onClick={() => setIsAdvanceStatusModalOpen(false)}
                   disabled={isSubmittingStatus}
-                  className="px-3 py-1.5 border border-slate-300 rounded-lg text-slate-700 disabled:opacity-50"
+                  className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-3 py-1.5 border border-slate-300 rounded-lg text-slate-700 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingStatus}
-                  className={`px-4 py-1.5 text-white font-bold rounded-lg shadow-xs flex items-center gap-1.5 ${
+                  className={`flex-1 sm:flex-none justify-center min-h-[44px] sm:min-h-0 px-4 py-1.5 text-white font-bold rounded-lg shadow-xs flex items-center gap-1.5 ${
                     isSubmittingStatus ? 'bg-slate-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
                   }`}
                 >
@@ -1747,18 +2010,18 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
 
       {/* Add Staff Modal */}
       {isStaffModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden max-h-[92vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
-              <h3 className="font-bold text-slate-900 text-sm">
+        <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full max-h-[92dvh] overflow-y-auto">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white z-10">
+              <h3 className="font-bold text-slate-900 text-sm break-words min-w-0">
                 {editingStaff ? 'Edit Staff Profile' : 'Register New Staff Member'}
               </h3>
-              <button onClick={() => setIsStaffModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setIsStaffModalOpen(false)} className="p-3 -m-3 shrink-0 text-slate-400 hover:text-slate-600" aria-label="Close">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveStaff} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleSaveStaff} className="p-4 sm:p-6 space-y-4 text-xs">
               <div>
                 <label className="block text-slate-700 font-semibold mb-1">Full Name *</label>
                 <input
@@ -1767,17 +2030,17 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                   placeholder="e.g. Ramesh Kumar"
                   value={staffForm.fullName || ''}
                   onChange={e => setStaffForm({ ...staffForm, fullName: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 font-semibold mb-1">Position / Role</label>
                   <select
                     value={staffForm.position || 'KITCHEN_HELPER'}
                     onChange={e => setStaffForm({ ...staffForm, position: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white"
+                    className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none bg-white"
                   >
                     {positions.map(p => (
                       <option key={p} value={p}>
@@ -1794,12 +2057,12 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                     required
                     value={staffForm.phoneNumber || ''}
                     onChange={e => setStaffForm({ ...staffForm, phoneNumber: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 font-semibold mb-1">Base Monthly Salary (₹)</label>
                   <input
@@ -1820,7 +2083,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                       }
                     }}
                     placeholder="0"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                 </div>
 
@@ -1830,7 +2093,7 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                     type="date"
                     value={staffForm.joiningDate || ''}
                     onChange={e => setStaffForm({ ...staffForm, joiningDate: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                    className="w-full px-3 py-2.5 sm:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -1872,17 +2135,17 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
                 />
               </div>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end space-x-2">
+              <div className="pt-4 pb-1 border-t border-slate-100 flex items-center justify-end gap-2 sticky bottom-0 bg-white">
                 <button
                   type="button"
                   onClick={() => { setIsStaffModalOpen(false); setPendingStaffImage(null); }}
-                  className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-medium"
+                  className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2 border border-slate-300 rounded-lg text-slate-700 font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg shadow-xs"
+                  className="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg shadow-xs"
                 >
                   Save Staff Profile
                 </button>
@@ -1891,6 +2154,84 @@ export const StaffPage: React.FC<StaffPageProps> = ({ searchTerm: globalSearchTe
           </div>
         </div>
       )}
+      {/* Phone detail sheets */}
+      {detailStaff && (() => {
+        const { fields, actions, paid } = buildStaffSheet(detailStaff);
+        return (
+          <DetailSheet
+            open
+            onClose={() => setDetailStaffId(null)}
+            title={detailStaff.fullName}
+            subtitle={detailStaff.position?.replace('_', ' ') || 'OTHER'}
+            leading={<Avatar src={detailStaff.primaryImageUrl} name={detailStaff.fullName || 'User'} size="lg" colorClass={`text-white ${getAvatarColor(detailStaff.fullName || 'User')}`} />}
+            badges={
+              <>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${paid ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+                  {paid ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                  {paid ? 'Salary paid' : 'Salary pending'}
+                </span>
+                {detailStaff.status && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-slate-100 text-slate-700 border-slate-200">{detailStaff.status.replace('_', ' ')}</span>}
+              </>
+            }
+            headline={<>₹{(detailStaff.baseSalary || 0).toLocaleString()}</>}
+            fields={fields}
+            actions={actions}
+          />
+        );
+      })()}
+
+      {detailPayment && (() => {
+        const st = getStaffObject(detailPayment);
+        const nm = st?.fullName || getStaffName(detailPayment) || 'Unknown Staff';
+        const fields: DetailField[] = [
+          { icon: Calendar, label: 'Payment date', value: detailPayment.paymentDate || '-' },
+          { icon: CreditCard, label: 'Method', value: detailPayment.paymentMethod || 'CASH' },
+          detailPayment.transactionId ? { icon: Hash, label: 'Transaction ID', value: detailPayment.transactionId, wide: true } : null,
+          detailPayment.bonus ? { icon: Wallet, label: 'Bonus', value: `₹${detailPayment.bonus.toLocaleString()}`, tone: 'good' as const } : null,
+          detailPayment.deductions ? { icon: Wallet, label: 'Deductions', value: `₹${detailPayment.deductions.toLocaleString()}`, tone: 'bad' as const } : null,
+          detailPayment.remarks ? { icon: StickyNote, label: 'Remarks', value: detailPayment.remarks, wide: true } : null,
+        ].filter(Boolean) as DetailField[];
+        return (
+          <DetailSheet
+            open
+            onClose={() => setDetailPaymentId(null)}
+            title={nm}
+            subtitle={`${detailPayment.paymentMonth} ${detailPayment.paymentYear}`}
+            headline={<>₹{(detailPayment.amount || 0).toLocaleString()}</>}
+            fields={fields}
+            actions={[{ label: 'Delete', icon: Trash2, tone: 'danger', onClick: () => { setDetailPaymentId(null); handleDeletePayment(detailPayment); } }]}
+          />
+        );
+      })()}
+
+      {detailAdvance && (() => {
+        const nm = getStaffName(detailAdvance);
+        const reasonText = detailAdvance.reason || detailAdvance.purpose;
+        const fields: DetailField[] = [
+          detailAdvance.advanceDate ? { icon: Calendar, label: 'Date given', value: detailAdvance.advanceDate } : null,
+          { icon: CheckCircle, label: 'Repaid', value: `₹${(detailAdvance.repaidAmount || detailAdvance.repaymentAmount || 0).toLocaleString()}`, tone: 'good' as const },
+          detailAdvance.remainingAmount != null ? { icon: IndianRupee, label: 'Remaining', value: `₹${detailAdvance.remainingAmount.toLocaleString()}`, tone: 'warn' as const } : null,
+          detailAdvance.installmentMonths ? { icon: Hash, label: 'Installments', value: `${detailAdvance.installmentMonths} months` } : null,
+          detailAdvance.monthlyDeduction ? { icon: Wallet, label: 'Monthly deduction', value: `₹${detailAdvance.monthlyDeduction.toLocaleString()}` } : null,
+          reasonText ? { icon: StickyNote, label: 'Purpose', value: reasonText, wide: true } : null,
+          detailAdvance.remarks ? { icon: StickyNote, label: 'Remarks', value: detailAdvance.remarks, wide: true } : null,
+        ].filter(Boolean) as DetailField[];
+        return (
+          <DetailSheet
+            open
+            onClose={() => setDetailAdvanceId(null)}
+            title={nm}
+            subtitle="Salary advance"
+            badges={<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-slate-100 text-slate-700 border-slate-200">{detailAdvance.status || 'PENDING'}</span>}
+            headline={<>₹{(detailAdvance.amount || detailAdvance.advanceAmount || 0).toLocaleString()}</>}
+            fields={fields}
+            actions={[
+              { label: 'Update Status', icon: Edit2, onClick: () => { setDetailAdvanceId(null); openAdvanceStatusModal(detailAdvance); } },
+              { label: 'Delete', icon: Trash2, tone: 'danger', onClick: () => { setDetailAdvanceId(null); handleDeleteAdvance(detailAdvance); } },
+            ]}
+          />
+        );
+      })()}
     </div>
   );
 };

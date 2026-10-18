@@ -39,7 +39,7 @@ const ChartTooltip: React.FC<any> = ({ active, payload, label }) => {
   if (!entry) return null;
   const profit = Number(entry.profit || 0);
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-lg p-3 text-xs min-w-[220px]">
+    <div className="bg-white border border-slate-200 rounded-lg shadow-lg p-3 text-xs min-w-[200px] max-w-[85vw]">
       <div className="font-bold text-slate-900 mb-2">{entry.monthName || label}</div>
       <div className="space-y-1">
         <Row label="Mess fees" value={entry.messFees} />
@@ -101,12 +101,12 @@ export const MonthlyProfitLossChart: React.FC<MonthlyProfitLossChartProps> = ({
       <div className="flex flex-col items-center justify-center text-center gap-2" style={{ height }}>
         <AlertCircle className="w-8 h-8 text-rose-500" />
         <p className="text-sm font-semibold text-slate-800">Could not load the monthly profit &amp; loss data</p>
-        <p className="text-xs text-slate-500 max-w-md">{error}</p>
+        <p className="text-xs text-slate-500 max-w-md break-words px-4">{error}</p>
         {onRetry && (
           <button
             type="button"
             onClick={onRetry}
-            className="mt-1 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800"
+            className="mt-1 inline-flex items-center gap-1.5 px-4 min-h-[40px] sm:min-h-0 sm:px-3 sm:py-1.5 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-slate-800"
           >
             <RefreshCw className="w-3.5 h-3.5" /> Retry
           </button>
@@ -123,7 +123,7 @@ export const MonthlyProfitLossChart: React.FC<MonthlyProfitLossChartProps> = ({
           <BarChart3 className="w-6 h-6 text-slate-400" />
         </div>
         <p className="text-sm font-semibold text-slate-800">No financial records for {year}</p>
-        <p className="text-xs text-slate-500 max-w-sm">
+        <p className="text-xs text-slate-500 max-w-sm px-4">
           Mess fee collections, party bookings, college bills, expenses or staff salary payments dated in {year} will
           appear here automatically.
         </p>
@@ -142,20 +142,21 @@ export const MonthlyProfitLossChart: React.FC<MonthlyProfitLossChartProps> = ({
   return (
     <div style={{ width: '100%', height }} className="min-w-0">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} barGap={4}>
+        <ComposedChart data={chartData} margin={{ top: 10, right: 8, left: 0, bottom: 0 }} barGap={4}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
           <XAxis
             dataKey="label"
             tick={{ fontSize: 11, fill: '#64748b' }}
             axisLine={{ stroke: '#cbd5e1' }}
             tickLine={false}
+            tickMargin={4}
           />
           <YAxis
             tickFormatter={(v: number) => formatCompactINR(v)}
             tick={{ fontSize: 11, fill: '#64748b' }}
             axisLine={false}
             tickLine={false}
-            width={64}
+            width={52}
           />
           <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.12)' }} />
           <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} iconType="circle" iconSize={8} />

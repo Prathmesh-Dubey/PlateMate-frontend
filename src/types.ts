@@ -612,6 +612,10 @@ export interface BillingSummary {
     total: number;
     count: number;
     categoryBreakdown: Record<string, number>;
+    dayToDayTotal: number;
+    dayToDayCount: number;
+    paidTotal: number;
+    unpaidTotal: number;
   };
   todayExpense: {
     date: string;

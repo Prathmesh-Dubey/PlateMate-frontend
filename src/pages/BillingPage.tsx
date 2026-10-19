@@ -41,6 +41,52 @@ const SCOPE_OPTIONS: Array<{ id: BillingScope; label: string }> = [
   { id: 'ALL', label: 'All Time' },
 ];
 
+// Categories owned by the Total Expenses page (keep in sync with CATEGORIES in TotalExpensesPage.tsx)
+const TOTAL_EXPENSES_PAGE_CATEGORIES = ['GROCERY', 'GAS_CYLINDER', 'UTILITIES', 'MAINTENANCE'];
+
+// Categories owned by the Day-to-day Expenses page (keep in sync with expenseCategories in ExpensesPage.tsx)
+const DAY_TO_DAY_PAGE_CATEGORIES = ['VEGETABLES', 'MILK_DAIRY', 'MISCELLANEOUS'];
+
+/**
+ * Mess fees in the Monthly P&L / ledger = the "Monthly Mess Fees" figure from the Dashboard
+ * (sum of every candidate's monthly fee) for the CURRENT month only; every other month keeps the backend value.
+ */
+const withExpectedMessFees = (data: MonthlyProfitLoss, expectedFees: number): MonthlyProfitLoss => {
+  const now = new Date();
+  const currentMonth = data.year === now.getFullYear() ? now.getMonth() + 1 : 0;
+  const monthlyData = data.monthlyData.map(row => {
+    if (row.month !== currentMonth) return row;
+    const income = expectedFees + row.partyIncome + row.collegeBillingIncome;
+    const profit = income - row.expenses;
+    return {
+      ...row,
+      messFees: expectedFees,
+      income,
+      profit,
+      profitMargin: income > 0 ? (profit / income) * 100 : 0,
+      hasData: row.hasData || expectedFees > 0,
+    };
+  });
+  const sum = (pick: (r: (typeof monthlyData)[number]) => number) => monthlyData.reduce((t, r) => t + pick(r), 0);
+  const withData = monthlyData.filter(r => r.hasData);
+  const income = sum(r => r.income);
+  const expenses = sum(r => r.expenses);
+  return {
+    ...data,
+    monthlyData,
+    totals: {
+      ...data.totals,
+      messFees: sum(r => r.messFees),
+      income,
+      expenses,
+      profit: income - expenses,
+      profitableMonths: withData.filter(r => r.profit > 0).length,
+      lossMonths: withData.filter(r => r.profit < 0).length,
+      monthsWithData: withData.length,
+    },
+  };
+};
+
 const errorMessage = (err: unknown, fallback: string) =>
   err instanceof Error && err.message ? err.message : fallback;
 
@@ -60,6 +106,39 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
   const [pnl, setPnl] = useState<MonthlyProfitLoss | null>(null);
   const [pnlLoading, setPnlLoading] = useState<boolean>(true);
   const [pnlError, setPnlError] = useState<string | null>(null);
+
+  // "Total Expenses" box: same records and maths as the Total Expenses page (all dates, no filters)
+  const [supplyBox, setSupplyBox] = useState<{ total: number; count: number; paid: number; unpaid: number } | null>(null);
+
+  const [dayBox, setDayBox] = useState<{ total: number; count: number } | null>(null);
+
+  const loadSupplyBox = useCallback(async () => {
+    try {
+      const list = await api.expense.getAll();
+      let total = 0, paid = 0, unpaid = 0, count = 0;
+      let dayTotal = 0, dayCount = 0;
+      (Array.isArray(list) ? list : []).forEach(e => {
+        if (!e) return;
+        // Day-to-day page: same maths as ExpensesPage (quantity x rate; no category counts as miscellaneous)
+        if (DAY_TO_DAY_PAGE_CATEGORIES.includes((e.category || 'MISCELLANEOUS').toUpperCase())) {
+          dayTotal += (e.quantity || 1) * (e.rate || 0);
+          dayCount++;
+          return;
+        }
+        if (!TOTAL_EXPENSES_PAGE_CATEGORIES.includes((e.category || '').toUpperCase())) return;
+        const amount = e.totalAmount || ((e.quantity || 1) * (e.rate || 0));
+        total += amount;
+        count++;
+        if ((e.paymentStatus || '').toUpperCase() === 'PAID') paid += amount;
+        else unpaid += amount;
+      });
+      setSupplyBox({ total, count, paid, unpaid });
+      setDayBox({ total: dayTotal, count: dayCount });
+    } catch {
+      setSupplyBox(null);
+      setDayBox(null);
+    }
+  }, []);
 
   // Keep the latest toast function without re-triggering data loads on every render
   const toastRef = useRef(showToast);
@@ -91,9 +170,15 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
     setPnlLoading(true);
     setPnlError(null);
     try {
-      const data = await api.billing.getProfitLossChart(year);
+      const [data, candidates] = await Promise.all([
+        api.billing.getProfitLossChart(year),
+        api.candidate.getAll().catch(() => []),
+      ]);
       if (requestId !== pnlRequestId.current) return;
-      setPnl(data);
+      const expectedFees = (Array.isArray(candidates) ? candidates : [])
+        .filter(Boolean)
+        .reduce((sum, c) => sum + (c.monthlyFee || c.monthlyRate || 0), 0);
+      setPnl(withExpectedMessFees(data, expectedFees));
     } catch (err) {
       if (requestId !== pnlRequestId.current) return;
       const msg = errorMessage(err, 'Failed to load the monthly profit & loss data');
@@ -113,10 +198,15 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
     loadPnl();
   }, [loadPnl]);
 
+  useEffect(() => {
+    loadSupplyBox();
+  }, [loadSupplyBox]);
+
   const refreshAll = () => {
     api.clearCache(); // manual refresh always bypasses the cache
     loadSummary();
     loadPnl();
+    loadSupplyBox();
   };
 
   const handlePrint = () => {
@@ -279,15 +369,13 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
           loading={summaryLoading}
           error={cardError}
           onRetry={loadSummary}
-          value={s ? formatINR(s.staffSalary.monthlyPayroll) : null}
-          subtitle={s && <>{plural(s.staffSalary.activeStaffCount, 'active staff member')} · base salary per month</>}
+          value={s ? formatINR(s.staffSalary.paidInPeriod) : null}
+          subtitle={s && <>{plural(s.staffSalary.paymentCount, 'salary slip')} paid in {periodLabel}</>}
           footer={
             s && (
               <>
-                <span>Paid ({periodLabel})</span>
-                <span className="font-semibold text-slate-800">
-                  {formatINR(s.staffSalary.paidInPeriod)} · {plural(s.staffSalary.paymentCount, 'slip')}
-                </span>
+                <span>Monthly payroll ({plural(s.staffSalary.activeStaffCount, 'active staff member')})</span>
+                <span className="font-semibold text-slate-800">{formatINR(s.staffSalary.monthlyPayroll)}</span>
               </>
             )
           }
@@ -300,33 +388,31 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
           loading={summaryLoading}
           error={cardError}
           onRetry={loadSummary}
-          value={s ? formatINR(s.expenses.total) : null}
-          subtitle={
-            s && (
+          value={supplyBox ? formatINR(supplyBox.total) : null}
+          subtitle={supplyBox && <>{plural(supplyBox.count, 'expense record')}</>}
+          footer={
+            supplyBox && (
               <>
-                {plural(s.expenses.count, 'entry', 'entries')}
-                {topCategories.length > 0 && (
-                  <>
-                    {' '}· top: {topCategories.map(([cat, amt]) => `${cat.replace(/_/g, ' ').toLowerCase()} ${formatINR(amt, { decimals: 0 })}`).join(', ')}
-                  </>
-                )}
+                <span>
+                  Paid <span className="font-semibold text-emerald-700">{formatINR(supplyBox.paid)}</span>
+                </span>
+                <span>
+                  Unpaid <span className="font-semibold text-rose-700">{formatINR(supplyBox.unpaid)}</span>
+                </span>
               </>
             )
           }
-          footer={s && <span>All categories from the expense log ({periodLabel})</span>}
         />
 
         <SummaryCard
-          title="Today's Day-to-Day Expense"
-          badge="Today"
-          icon={CalendarDays}
-          accent="orange"
+          title="Day-to-Day Expenses"
+          icon={IndianRupee}
+          accent="rose"
           loading={summaryLoading}
           error={cardError}
           onRetry={loadSummary}
-          value={s ? formatINR(s.todayExpense.amount) : null}
-          subtitle={s && <>{formatDate(s.todayExpense.date, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} · {plural(s.todayExpense.count, 'entry', 'entries')}</>}
-          footer={s && <span>Logged on the Day-to-day Expenses page for today</span>}
+          value={dayBox ? formatINR(dayBox.total) : null}
+          subtitle={dayBox && <>{plural(dayBox.count, 'bill')} · average {formatINR(dayBox.count ? Math.round(dayBox.total / dayBox.count) : 0, { decimals: 0 })} per bill</>}
         />
 
         <SummaryCard

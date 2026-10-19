@@ -30,13 +30,10 @@ interface ExpensesPageProps {
   showToast: (type: 'success' | 'error' | 'info', text: string) => void;
 }
 
+// Day-to-day page owns the small recurring categories; the rest live on the Total Expenses page.
 const expenseCategories: ExpenseCategory[] = [
   'VEGETABLES',
-  'GROCERY',
   'MILK_DAIRY',
-  'GAS_CYLINDER',
-  'UTILITIES',
-  'MAINTENANCE',
   'MISCELLANEOUS',
 ];
 
@@ -190,7 +187,9 @@ export const ExpensesPage: React.FC<ExpensesPageProps> = ({ searchTerm: globalSe
     setCustomUnit('');
   };
 
-  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+  const safeExpenses = (Array.isArray(expenses) ? expenses : []).filter(e =>
+    e && expenseCategories.includes((e.category || 'MISCELLANEOUS') as ExpenseCategory)
+  );
 
   const combinedSearchTerm = globalSearchTerm || localSearchTerm;
 

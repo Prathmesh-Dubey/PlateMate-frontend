@@ -667,6 +667,7 @@ export interface MonthlyProfitLossEntry {
   collegeBillingIncome: number;
   income: number;
   dayToDayExpenses: number;
+  supplyExpenses: number;
   staffSalary: number;
   expenses: number;
   profit: number;
@@ -684,6 +685,7 @@ export interface MonthlyProfitLoss {
     collegeBillingIncome: number;
     income: number;
     dayToDayExpenses: number;
+    supplyExpenses: number;
     staffSalary: number;
     expenses: number;
     profit: number;

@@ -48,6 +48,7 @@ const ChartTooltip: React.FC<any> = ({ active, payload, label }) => {
         <Row label="Revenue" value={entry.income} bold color="text-emerald-700" />
         <div className="border-t border-slate-100 my-1" />
         <Row label="Expenses (day-to-day)" value={entry.dayToDayExpenses} />
+        <Row label="Supplies (total expenses)" value={entry.supplyExpenses ?? 0} />
         <Row label="Staff salary" value={entry.staffSalary} />
         <Row label="Total expenses" value={entry.expenses} bold color="text-rose-700" />
         <div className="border-t border-slate-100 my-1" />

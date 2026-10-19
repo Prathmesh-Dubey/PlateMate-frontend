@@ -515,7 +515,8 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
                   <th className="px-4 py-3 text-right">Party Income</th>
                   <th className="px-4 py-3 text-right">College Billing</th>
                   <th className="px-4 py-3 text-right">Revenue</th>
-                  <th className="px-4 py-3 text-right">Expenses</th>
+                  <th className="px-4 py-3 text-right">Day-to-day</th>
+                  <th className="px-4 py-3 text-right">Supplies</th>
                   <th className="px-4 py-3 text-right">Staff Salary</th>
                   <th className="px-4 py-3 text-right">Total Costs</th>
                   <th className="px-4 py-3 text-right">Net Profit / Loss</th>
@@ -542,6 +543,7 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
                       <td className="px-4 py-3 text-right">{cell(row.collegeBillingIncome)}</td>
                       <td className="px-4 py-3 text-right font-semibold text-emerald-700">{cell(row.income)}</td>
                       <td className="px-4 py-3 text-right">{cell(row.dayToDayExpenses)}</td>
+                      <td className="px-4 py-3 text-right">{cell(row.supplyExpenses ?? 0)}</td>
                       <td className="px-4 py-3 text-right">{cell(row.staffSalary)}</td>
                       <td className="px-4 py-3 text-right font-semibold text-rose-700">{cell(row.expenses)}</td>
                       <td className={`px-4 py-3 text-right font-bold ${muted ? '' : row.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -558,6 +560,7 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
                     <td className="px-4 py-3 text-right">{formatINR(pnlTotals.collegeBillingIncome)}</td>
                     <td className="px-4 py-3 text-right text-emerald-700">{formatINR(pnlTotals.income)}</td>
                     <td className="px-4 py-3 text-right">{formatINR(pnlTotals.dayToDayExpenses)}</td>
+                    <td className="px-4 py-3 text-right">{formatINR(pnlTotals.supplyExpenses ?? 0)}</td>
                     <td className="px-4 py-3 text-right">{formatINR(pnlTotals.staffSalary)}</td>
                     <td className="px-4 py-3 text-right text-rose-700">{formatINR(pnlTotals.expenses)}</td>
                     <td className={`px-4 py-3 text-right ${pnlTotals.profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -588,7 +591,8 @@ export const BillingPage: React.FC<BillingPageProps> = ({ showToast }) => {
               { icon: PartyPopper, label: 'Party income', value: cell(row.partyIncome) },
               { icon: Building2, label: 'College billing', value: cell(row.collegeBillingIncome) },
               { icon: TrendingUp, label: 'Revenue', value: cell(row.income), tone: muted ? 'default' : 'good' },
-              { icon: Wallet, label: 'Expenses', value: cell(row.dayToDayExpenses) },
+              { icon: Wallet, label: 'Day-to-day expenses', value: cell(row.dayToDayExpenses) },
+              { icon: Wallet, label: 'Supplies (total expenses)', value: cell(row.supplyExpenses ?? 0) },
               { icon: UserCog, label: 'Staff salary', value: cell(row.staffSalary) },
               { icon: TrendingDown, label: 'Total costs', value: cell(row.expenses), tone: muted ? 'default' : 'bad' },
               { icon: IndianRupee, label: row.profit >= 0 ? 'Net profit' : 'Net loss', value: muted ? '—' : formatINR(row.profit, { signed: true }), tone: muted ? 'default' : row.profit >= 0 ? 'good' : 'bad' },

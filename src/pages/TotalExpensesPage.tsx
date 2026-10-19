@@ -40,14 +40,13 @@ interface TotalExpensesPageProps {
   showToast: (type: 'success' | 'error' | 'info', text: string) => void;
 }
 
+// Total Expenses page owns the bulk procurement/overhead categories; Vegetables, Milk & Dairy and
+// Miscellaneous are logged on the Day-to-day Expenses page.
 const CATEGORIES = [
-  { id: 'VEGETABLES', label: 'Vegetables', icon: Carrot, color: 'emerald' },
   { id: 'GROCERY', label: 'Grocery', icon: ShoppingBag, color: 'blue' },
-  { id: 'MILK_DAIRY', label: 'Milk & Dairy', icon: Milk, color: 'indigo' },
   { id: 'GAS_CYLINDER', label: 'Gas Cylinder', icon: Flame, color: 'amber' },
   { id: 'UTILITIES', label: 'Utilities (Water, Power)', icon: Zap, color: 'purple' },
   { id: 'MAINTENANCE', label: 'Maintenance & Repairs', icon: Wrench, color: 'rose' },
-  { id: 'MISCELLANEOUS', label: 'Miscellaneous', icon: Layers, color: 'gray' },
 ];
 
 // ✅ Predefined units for food items
@@ -102,7 +101,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
     try {
       setLoading(true);
       const data = await api.expense.getAll();
-      setExpenses(data || []);
+      setExpenses((data || []).filter(e => CATEGORIES.some(c => c.id === (e.category || '').toUpperCase())));
     } catch (err: any) {
       showToast('error', err.message || 'Failed to fetch categorized expenses');
     } finally {
@@ -528,7 +527,7 @@ export const TotalExpensesPage: React.FC<TotalExpensesPageProps> = ({ searchTerm
       </div>
 
       {/* Category Totals Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
         {CATEGORIES.map(cat => {
           const Icon = cat.icon;
           const total = categoryTotals[cat.id] || 0;

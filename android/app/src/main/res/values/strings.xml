@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">PlateMate</string>
-    <string name="title_activity_main">PlateMate</string>
+    <string name="app_name">OM SAI Mess</string>
+    <string name="title_activity_main">OM SAI Mess</string>
     <string name="package_name">com.platemate.app</string>
     <string name="custom_url_scheme">com.platemate.app</string>
 </resources>

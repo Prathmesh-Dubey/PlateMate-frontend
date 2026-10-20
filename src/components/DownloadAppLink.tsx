@@ -32,7 +32,7 @@ export const DownloadAppLink: React.FC<DownloadAppLinkProps> = ({ variant = 'nav
           <Smartphone className="h-5 w-5" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold">Get the PlateMate app</span>
+          <span className="block text-sm font-semibold">Get the OM SAI Mess app</span>
           <span className="block text-xs text-blue-700/80">Tap to download instantly</span>
         </span>
         <Download className="h-5 w-5 shrink-0" />
@@ -66,7 +66,7 @@ export const ShareAppButton: React.FC<{ onClick?: () => void; className?: string
       flash('nolink');
       return;
     }
-    const text = 'Download the PlateMate app (tap the link to start the download):';
+    const text = 'Download the OM SAI Mess app (tap the link to start the download):';
 
     // Laptop / desktop: no social-media share sheet - open the link in the browser (starts the download)
     // and copy it so it can be pasted anywhere.
@@ -85,11 +85,11 @@ export const ShareAppButton: React.FC<{ onClick?: () => void; className?: string
     try {
       if (isNativeApp()) {
         const { Share } = await import('@capacitor/share');
-        await Share.share({ title: 'PlateMate app', text, url: APP_DOWNLOAD_URL, dialogTitle: 'Share PlateMate app' });
+        await Share.share({ title: 'OM SAI Mess app', text, url: APP_DOWNLOAD_URL, dialogTitle: 'Share OM SAI Mess app' });
         return;
       }
       if (navigator.share) {
-        await navigator.share({ title: 'PlateMate app', text, url: APP_DOWNLOAD_URL });
+        await navigator.share({ title: 'OM SAI Mess app', text, url: APP_DOWNLOAD_URL });
         return;
       }
       await navigator.clipboard.writeText(`${text} ${APP_DOWNLOAD_URL}`);

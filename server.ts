@@ -23,7 +23,7 @@ async function startServer() {
 
   // API routes
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', service: 'MessFlow API', timestamp: new Date().toISOString() });
+    res.json({ status: 'ok', service: 'OM SAI Mess API', timestamp: new Date().toISOString() });
   });
 
   app.use('/api/candidates', candidatesRouter);

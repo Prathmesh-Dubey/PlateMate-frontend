@@ -151,20 +151,19 @@ export const Navigation: React.FC<NavigationProps> = ({
         aria-label="Main navigation"
       >
         {/* Brand Header */}
-        <div className="p-5 border-b border-slate-200 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-sm">
-              <img src="/logo.png" alt="PlateMate logo" className="w-full h-full object-cover" />
+        <div className="px-3.5 py-3 border-b border-slate-200 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-12 h-12 shrink-0 flex items-center justify-center">
+              <img src="/logo.webp" alt="OM SAI Mess logo" className="w-full h-full object-contain" />
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-base tracking-tight text-slate-900">PlateMate</span>
-                <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Pro</span>
+                <span className="font-bold text-[15px] tracking-tight text-slate-900 whitespace-nowrap">OM SAI Mess</span>
+                <span className="hidden lg:inline text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Pro</span>
               </div>
-              <span className="text-xs text-slate-500">Mess Management System</span>
             </div>
           </div>
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5 shrink-0">
             {onRefresh && (
               <button
                 type="button"

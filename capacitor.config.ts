@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.platemate.app',
-  appName: 'PlateMate',
+  appName: 'OM SAI Mess',
   webDir: 'dist',
 };
 

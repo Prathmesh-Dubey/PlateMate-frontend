@@ -237,9 +237,9 @@ export function SignUpPage({ onSignUpSuccess, showToast, onBackToLogin }: SignUp
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-5 sm:p-8">
         {/* Logo/Brand */}
         <div className="text-center mb-6 sm:mb-8">
-          <img src="/logo.png" alt="PlateMate logo" className="w-16 h-16 rounded-2xl mx-auto mb-4 object-contain shadow-sm" />
+          <img src="/logo.webp" alt="OM SAI Mess logo" className="w-32 h-32 mx-auto mb-4 object-contain" />
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Create Account</h2>
-          <p className="text-gray-600 mt-2">Join PlateMate today</p>
+          <p className="text-gray-600 mt-2">Join OM SAI Mess today</p>
         </div>
 
         {error && (
